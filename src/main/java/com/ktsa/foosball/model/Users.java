@@ -24,7 +24,6 @@ public class Users {
 
     //personal details
 
-    @NotNull
     private String userName;
 
     private String password;
@@ -37,13 +36,13 @@ public class Users {
     @Column(unique = true,nullable = false)
     private String email;
 
-    @Column(unique = true, length = 10,nullable = false)
+    @Column(unique = true, length = 10)
     private Long phoneNumber;
 
     @Enumerated(EnumType.STRING)
     private Gender gender;//male,female,other
 
-    @NotNull(message = "Date of birth is required")
+//    @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 
