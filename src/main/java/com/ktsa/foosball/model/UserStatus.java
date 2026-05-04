@@ -1,6 +1,6 @@
 package com.ktsa.foosball.model;
 
-public enum PlayerStatus {
+public enum UserStatus {
     ACTIVE,
     INACTIVE,
     BANNED

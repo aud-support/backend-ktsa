@@ -1,4 +1,4 @@
 package com.ktsa.foosball.service;
 
-public class PlayerService {
+public class UserService {
 }

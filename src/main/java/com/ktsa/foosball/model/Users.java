@@ -9,9 +9,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "player")
+@Table(name = "users")
 @Data
-public class player {
+public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "player_seq_gen")
@@ -24,8 +24,15 @@ public class player {
 
     //personal details
 
+    @NotNull
+    private String userName;
+
+    private String password;
+
     @Column(nullable = false)
-    private String name;
+    private String firstName;
+
+    private String lastName;
 
     @Column(unique = true,nullable = false)
     private String email;
@@ -44,14 +51,13 @@ public class player {
 
     private String state;
 
-    //player details with respect to game
-
-    private Integer points;
-
-    private Integer wins;
-
-    private LocalDateTime joiningDateTime;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;//active,inactive,banned
 
     @Enumerated(EnumType.STRING)
-    private PlayerStatus status;//active,inactive,banned
+    private Role role;//admin,referee,player
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }
