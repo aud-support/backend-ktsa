@@ -24,14 +24,10 @@ public class Users {
 
     //personal details
 
-    private String userName;
-
     private String password;
 
     @Column(nullable = false)
-    private String firstName;
-
-    private String lastName;
+    private String name;
 
     @Column(unique = true,nullable = false)
     private String email;

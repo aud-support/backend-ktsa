@@ -24,8 +24,8 @@ public class UserService {
         //send a welcome mail to new user
         emailService.sendEmail(
                 saved.getEmail(),
-                "Welcome "+saved.getFirstName() +" " +saved.getLastName(),
-                "Welcome to KTSA " + saved.getFirstName() + ", discover foosball with us."
+                "Welcome "+saved.getName(),
+                "Welcome to KTSA " + saved.getName() + ", discover foosball with us."
         );
 
         return userMapper.toDTO(saved);
