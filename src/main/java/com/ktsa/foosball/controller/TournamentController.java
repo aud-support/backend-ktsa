@@ -1,32 +1,29 @@
 package com.ktsa.foosball.controller;
 
-import com.ktsa.foosball.service.UserService;
-import com.ktsa.foosball.dto.UserRequestDTO;
+import com.ktsa.foosball.dto.TournamentRequestDTO;
+import com.ktsa.foosball.service.TournamentService;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/tournament")
 @CrossOrigin
-public class UserController {
+@AllArgsConstructor
+public class TournamentController {
 
-    private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    private TournamentService tournamentService;
 
     // ---------------------------------------------------------
-    // CREATE USER
+    // CREATE Tournament
     // ---------------------------------------------------------
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody UserRequestDTO dto) {
+    public ResponseEntity<?> createUser(@Valid @RequestBody TournamentRequestDTO dto) {
         try {
-            return ResponseEntity.ok(userService.createUser(dto));
+            return ResponseEntity.ok(tournamentService.createTournament(dto));
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -36,17 +33,16 @@ public class UserController {
     }
 
     // ---------------------------------------------------------
-    // FETCH ALL USER
+    // FETCH ALL TOURNAMENT
     // ---------------------------------------------------------
     @GetMapping
-    public ResponseEntity<?> getAllUser(){
+    public ResponseEntity<?> getAllTournaments(){
         try {
-            return ResponseEntity.ok(userService.getAllUsers());
+            return ResponseEntity.ok(tournamentService.getAllTournaments());
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Unable to fetch user list"
+                    "error", "Unable to fetch Tournament list"
             ));
         }
     }
-
 }

@@ -31,9 +31,14 @@ public class UserMapper {
     public UserResponseDTO toDTO(Users user) {
         UserResponseDTO dto = new UserResponseDTO();
         dto.setId(user.getId());
-        dto.setFirstName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
+        dto.setName(user.getName());
+        dto.setGender(user.getGender());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setCity(user.getCity());
+        dto.setState(user.getState());
+        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 }

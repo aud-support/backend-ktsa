@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -17,7 +18,7 @@ public class Tournaments {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
-    private String tournament_name;
+    private String tournamentName;
 
     private String description;
 
@@ -43,5 +44,5 @@ public class Tournaments {
     private Integer maxParticipants;
 
     @OneToMany
-    List<Users> players;
+    List<Users> players= new ArrayList<>();
 }

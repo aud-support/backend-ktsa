@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import  com.ktsa.foosball.dto.UserRequestDTO;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -16,18 +17,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final EmailService emailService;
 
     public UserResponseDTO createUser(UserRequestDTO dto) {
         Users saved = userRepository.save(userMapper.toEntity(dto));
-
-        //send a welcome mail to new user
-        emailService.sendEmail(
-                saved.getEmail(),
-                "Welcome "+saved.getName(),
-                "Welcome to KTSA " + saved.getName() + ", discover foosball with us."
-        );
-
         return userMapper.toDTO(saved);
+    }
+
+    public List<UserResponseDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }
