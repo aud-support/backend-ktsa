@@ -5,6 +5,7 @@ import com.ktsa.foosball.model.UserStatus;
 import com.ktsa.foosball.model.Users;
 import com.ktsa.foosball.dto.UserRequestDTO;
 import com.ktsa.foosball.dto.UserResponseDTO;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -12,12 +13,14 @@ import java.time.LocalDateTime;
 @Component
 public class UserMapper {
 
+    private BCryptPasswordEncoder encoder= new BCryptPasswordEncoder(10);
+
     public Users toEntity(UserRequestDTO dto) {
         Users user = new Users();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
         user.setPhoneNumber(dto.getPhoneNumber());
-        user.setPassword((dto.getPassword()));
+        user.setPassword(encoder.encode(dto.getPassword()));//bcrypting the password and saving in the entity
         user.setDateOfBirth(dto.getDateOfBirth());
         user.setRole(Role.PLAYER);
         user.setCity(dto.getCity());

@@ -25,8 +25,8 @@ public class UserRequestDTO {
 
     @Email
     @Pattern(
-            regexp = "^[A-Za-z0-9._%+-]+@(gmail\\.com)$",
-            message = "Email must end with @gmail.com"
+            regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.com$",
+            message = "Email must be a valid .com email address"
     )
     private String email;
 

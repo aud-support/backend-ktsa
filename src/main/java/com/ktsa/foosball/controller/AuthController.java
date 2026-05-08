@@ -8,6 +8,7 @@ import com.ktsa.foosball.security.JwtUtil;
 import com.ktsa.foosball.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
     // ADMIN CREDENTIALS
     private static final String ADMIN_EMAIL = "admin@gmail.com";
@@ -52,7 +54,7 @@ public class AuthController {
             );
         }
 
-        if (!password.equals( user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(401).body(
                     Map.of("error", "Invalid credentials")
             );
