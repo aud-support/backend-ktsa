@@ -74,7 +74,8 @@ public class AuthController {
                 "message", "Login successful",
                 "token", token,
                 "role", user.getRole().name(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "name",user.getName()
         ));
     }
 }
