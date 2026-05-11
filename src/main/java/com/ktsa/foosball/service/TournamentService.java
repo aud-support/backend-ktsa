@@ -3,6 +3,7 @@ package com.ktsa.foosball.service;
 import com.ktsa.foosball.dto.TournamentRequestDTO;
 import com.ktsa.foosball.dto.TournamentResponseDTO;
 
+import com.ktsa.foosball.exception.ResourceNotFoundException;
 import com.ktsa.foosball.mapper.TournamentMapper;
 import com.ktsa.foosball.model.Tournaments;
 import com.ktsa.foosball.repository.TournamentRepository;
@@ -28,5 +29,10 @@ public class TournamentService {
         return tournamentRepository.findAll().stream()
                 .map(tournamentMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Tournaments getTournamentById(Long tournamentId) {
+        return tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament not found with id: " + tournamentId));
     }
 }

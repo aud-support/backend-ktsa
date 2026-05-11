@@ -1,13 +1,11 @@
 package com.ktsa.foosball.controller;
 
+import com.ktsa.foosball.dto.ApiResponse;
 import com.ktsa.foosball.service.UserService;
 import com.ktsa.foosball.dto.UserRequestDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,29 +22,20 @@ public class UserController {
     // CREATE USER
     // ---------------------------------------------------------
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody UserRequestDTO dto) {
-        try {
-            return ResponseEntity.ok(userService.createUser(dto));
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", e.getMessage()
-            ));
-        }
+    public ResponseEntity<ApiResponse<?>> createUser(@Valid @RequestBody UserRequestDTO dto) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "User created successfully", userService.createUser(dto))
+        );
     }
 
     // ---------------------------------------------------------
     // FETCH ALL USER
     // ---------------------------------------------------------
     @GetMapping
-    public ResponseEntity<?> getAllUser(){
-        try {
-            return ResponseEntity.ok(userService.getAllUsers());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", "Unable to fetch user list"
-            ));
-        }
+    public ResponseEntity<ApiResponse<?>> getAllUser() {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Users fetched successfully", userService.getAllUsers())
+        );
     }
 
 }

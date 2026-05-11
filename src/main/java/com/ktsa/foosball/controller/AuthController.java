@@ -1,6 +1,10 @@
 package com.ktsa.foosball.controller;
 
+import com.ktsa.foosball.dto.ApiResponse;
 import com.ktsa.foosball.dto.UserDTO;
+import com.ktsa.foosball.exception.AccountInactiveException;
+import com.ktsa.foosball.exception.InvalidCredentialsException;
+import com.ktsa.foosball.exception.ResourceNotFoundException;
 import com.ktsa.foosball.model.UserStatus;
 import com.ktsa.foosball.model.Users;
 import com.ktsa.foosball.repository.UserRepository;
@@ -12,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-
 @RestController
 @CrossOrigin
 @RequestMapping("/api/auth")
@@ -23,59 +26,44 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
-    // ADMIN CREDENTIALS
     private static final String ADMIN_EMAIL = "admin@gmail.com";
     private static final String ADMIN_PASSWORD = "admin123";
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserDTO request) {
+    public ResponseEntity<ApiResponse<?>> login(@RequestBody UserDTO request) {
 
         String identifier = request.getIdentifier();
         String password = request.getPassword();
 
-        // ------------------------------------
         // ADMIN LOGIN
-        // ------------------------------------
         if (identifier.equalsIgnoreCase(ADMIN_EMAIL) && password.equals(ADMIN_PASSWORD)) {
-            // TODO: generate admin JWT token properly later
             return ResponseEntity.ok(
-                    Map.of("message", "Login successful", "role", "ADMIN")
+                    ApiResponse.success(200, "Login successful", Map.of("role", "ADMIN"))
             );
         }
 
-        // ------------------------------------
         // PLAYER LOGIN
-        // ------------------------------------
-        Users user = userRepository.findByEmail(identifier).orElse(null);
-
-        if (user == null) {
-            return ResponseEntity.status(401).body(
-                    Map.of("error", "Invalid credentials")
-            );
-        }
+        Users user = userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            return ResponseEntity.status(401).body(
-                    Map.of("error", "Invalid credentials")
-            );
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            return ResponseEntity.status(403).body(
-                    Map.of("error", "Account is inactive or banned")
-            );
+            throw new AccountInactiveException("Account is inactive or banned");
         }
 
-        // ✅ All checks passed — generate token
         CustomUserDetails userDetails = new CustomUserDetails(user);
         String token = jwtUtil.generateToken(identifier, user.getRole());
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Login successful",
-                "token", token,
-                "role", user.getRole().name(),
-                "email", user.getEmail(),
-                "name",user.getName()
-        ));
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Login successful", Map.of(
+                        "token", token,
+                        "role", user.getRole().name(),
+                        "email", user.getEmail(),
+                        "name", user.getName()
+                ))
+        );
     }
 }
