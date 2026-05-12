@@ -62,7 +62,8 @@ public class AuthController {
                         "token", token,
                         "role", user.getRole().name(),
                         "email", user.getEmail(),
-                        "name", user.getName()
+                        "name", user.getName(),
+                        "id",user.getId()
                 ))
         );
     }
