@@ -38,4 +38,14 @@ public class UserController {
         );
     }
 
+    // ---------------------------------------------------------
+    // FETCH USER byID
+    // ---------------------------------------------------------
+    @GetMapping("{id}")
+    public ResponseEntity<ApiResponse<?>> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Users fetched successfully", userService.getUserById(id))
+        );
+    }
+
 }

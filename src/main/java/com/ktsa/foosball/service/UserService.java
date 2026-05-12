@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import  com.ktsa.foosball.dto.UserRequestDTO;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,4 +29,12 @@ public class UserService {
                 .map(userMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    public Optional<UserResponseDTO> getUserById(Long id) {
+        return userRepository.findById(id).map(userMapper::toDTO);
+    }
+
+
+
+
 }
