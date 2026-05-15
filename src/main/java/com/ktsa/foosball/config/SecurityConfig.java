@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/tournament/**").hasRole("ADMIN")
                         .requestMatchers("/api/registration/**").permitAll()
+                        .requestMatchers("/api/rankings/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

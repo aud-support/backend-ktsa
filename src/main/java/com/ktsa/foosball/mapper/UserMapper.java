@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Component
 public class UserMapper {
 
-    private BCryptPasswordEncoder encoder= new BCryptPasswordEncoder(10);
+    final private BCryptPasswordEncoder encoder= new BCryptPasswordEncoder(10);
 
     public Users toEntity(UserRequestDTO dto) {
         Users user = new Users();
@@ -41,7 +41,9 @@ public class UserMapper {
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setCity(user.getCity());
         dto.setState(user.getState());
+        dto.setDateOfBirth(user.getDateOfBirth());
         dto.setCreatedAt(user.getCreatedAt());
+        dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
     }
 }

@@ -19,4 +19,5 @@ public class UserResponseDTO {
     private String state;
     private Long phoneNumber;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

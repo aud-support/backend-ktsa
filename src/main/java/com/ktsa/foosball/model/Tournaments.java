@@ -45,4 +45,7 @@ public class Tournaments {
 
     @OneToMany
     List<Users> players= new ArrayList<>();
+
+    @OneToMany
+    List<Teams> teams = new ArrayList<>();
 }
