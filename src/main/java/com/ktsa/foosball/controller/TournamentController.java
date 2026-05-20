@@ -27,14 +27,14 @@ public class TournamentController {
     // ---------------------------------------------------------
     // FETCH ALL TOURNAMENT
     // ---------------------------------------------------------
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<?>> getAllTournaments() {
-//        return ResponseEntity.ok(
-//                ApiResponse.success(200, "Tournaments fetched successfully", tournamentService.getAllTournaments())
-//        );
-//    }
-//
-//    // ---------------------------------------------------------
+    @GetMapping
+    public ResponseEntity<ApiResponse<?>> getAllTournaments() {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Tournaments fetched successfully", tournamentService.getAllTournaments())
+        );
+    }
+
+      // ---------------------------------------------------------
 //    // FETCH TOURNAMENT BY ID
 //    // ---------------------------------------------------------
     @GetMapping("{tournamentId}")

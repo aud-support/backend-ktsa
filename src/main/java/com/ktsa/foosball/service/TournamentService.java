@@ -12,6 +12,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class TournamentService {
@@ -29,11 +32,11 @@ public class TournamentService {
 
     }
 
-//    public List<TournamentResponseDTO> getAllTournaments() {
-//        return tournamentRepository.findAll().stream()
-//                .map(tournamentMapper::toDTO)
-//                .collect(Collectors.toList());
-//    }
+    public List<TournamentResponseDTO> getAllTournaments() {
+        return tournamentRepository.findAll().stream()
+                .map(tournament -> modelMapper.map(tournament, TournamentResponseDTO.class))
+                .collect(Collectors.toList());
+    }
 //
     public TournamentResponseDTO getTournamentById(Long tournamentId) {
 
