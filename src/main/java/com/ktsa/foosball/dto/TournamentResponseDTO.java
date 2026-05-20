@@ -10,6 +10,7 @@ import java.time.LocalDate;
 @Data
 public class TournamentResponseDTO {
 
+    private Long id;
     private String tournamentName;
     private String description;
     private Format format;
