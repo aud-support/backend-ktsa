@@ -11,23 +11,13 @@ import java.time.LocalDate;
 public class TournamentRequestDTO {
 
     private String tournamentName;
-
     private String description;
-
     private Format format;
-
     private TournamentStatus status;
-
-
     private LocalDate startDate;
-
-
     private LocalDate endDate;
-
     @NotBlank
     private String venue;
-
     private Double pricePool;
-
     private Integer maxParticipants;
 }

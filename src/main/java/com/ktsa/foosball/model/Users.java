@@ -5,13 +5,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 public class Users {
 
     @Id
@@ -24,7 +27,6 @@ public class Users {
     private Long id;
 
     //personal details
-
     private String password;
 
     @Column(nullable = false)
@@ -47,6 +49,8 @@ public class Users {
 
     private String state;
 
+    private String profileUrl;
+
     @Enumerated(EnumType.STRING)
     private UserStatus status;//active,inactive,banned
 
@@ -63,4 +67,5 @@ public class Users {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Ranking ranking;
+
 }

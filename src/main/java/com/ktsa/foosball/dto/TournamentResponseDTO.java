@@ -9,19 +9,14 @@ import java.time.LocalDate;
 
 @Data
 public class TournamentResponseDTO {
+
     private String tournamentName;
-
     private String description;
-
     private Format format;
-
     private TournamentStatus status;
-
     @NotBlank
     private LocalDate startDate;
-
     @NotBlank
     private String venue;
-
     private Double pricePool;
 }

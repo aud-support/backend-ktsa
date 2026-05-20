@@ -67,5 +67,11 @@ public class UserController {
     }
 
 
+    @GetMapping("/{email}")
+    public ResponseEntity<ApiResponse<?>> getUserByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "User fetched successfully", userService.getUserByEmail(email))
+        );
+    }
 
 }

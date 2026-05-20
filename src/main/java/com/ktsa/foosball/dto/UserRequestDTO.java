@@ -33,4 +33,6 @@ public class UserRequestDTO {
     private Role role;
 
     private Gender gender;
+
+    private String position;
 }

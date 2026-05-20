@@ -21,28 +21,26 @@ public class TournamentController {
     // ---------------------------------------------------------
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createTournament(@Valid @RequestBody TournamentRequestDTO dto) {
-        return ResponseEntity.ok(
-                ApiResponse.success(200, "Tournament created successfully", tournamentService.createTournament(dto))
-        );
+        return  tournamentService.createTournament(dto);
     }
 
     // ---------------------------------------------------------
     // FETCH ALL TOURNAMENT
     // ---------------------------------------------------------
-    @GetMapping
-    public ResponseEntity<ApiResponse<?>> getAllTournaments() {
-        return ResponseEntity.ok(
-                ApiResponse.success(200, "Tournaments fetched successfully", tournamentService.getAllTournaments())
-        );
-    }
-
-    // ---------------------------------------------------------
-    // FETCH TOURNAMENT BY ID
-    // ---------------------------------------------------------
-    @GetMapping("{tournamentId}")
-    public ResponseEntity<ApiResponse<?>> getTournamentById(@PathVariable Long tournamentId) {
-        return ResponseEntity.ok(
-                ApiResponse.success(200, "Tournament fetched successfully", tournamentService.getTournamentById(tournamentId))
-        );
-    }
+//    @GetMapping
+//    public ResponseEntity<ApiResponse<?>> getAllTournaments() {
+//        return ResponseEntity.ok(
+//                ApiResponse.success(200, "Tournaments fetched successfully", tournamentService.getAllTournaments())
+//        );
+//    }
+//
+//    // ---------------------------------------------------------
+//    // FETCH TOURNAMENT BY ID
+//    // ---------------------------------------------------------
+//    @GetMapping("{tournamentId}")
+//    public ResponseEntity<ApiResponse<?>> getTournamentById(@PathVariable Long tournamentId) {
+//        return ResponseEntity.ok(
+//                ApiResponse.success(200, "Tournament fetched successfully", tournamentService.getTournamentById(tournamentId))
+//        );
+//    }
 }

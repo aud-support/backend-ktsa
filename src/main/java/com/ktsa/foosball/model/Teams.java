@@ -1,13 +1,14 @@
 package com.ktsa.foosball.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 @Entity
 @Table(name = "team")
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class Teams {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,12 +16,13 @@ public class Teams {
 
     private String teamName;//player1_name & player2_name
 
-    @OneToOne
+    @ManyToOne
     private Users playerOne;
 
-    @OneToOne
-    private Users PlayerTwo;
+    @ManyToOne
+    private Users playerTwo;
 
     @ManyToOne
     private Tournaments tournament;
+
 }

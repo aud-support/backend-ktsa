@@ -64,6 +64,12 @@ public class UserService {
         return userMapper.toDTO(userRepository.save(user));
     }
 
+    public Optional<UserResponseDTO> getUserByEmail(String email) {
+
+        return userRepository.findByEmail(email).map(userMapper::toDTO);
+    }
+
+
 
 
 }
