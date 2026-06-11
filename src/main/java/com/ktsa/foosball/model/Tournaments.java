@@ -36,7 +36,6 @@ public class Tournaments {
 
     @NotNull(message = "Date is required")
     private LocalDate endDate;
-
     private LocalDateTime createdAt;
 
     @NotNull(message = "Venue is required")
@@ -46,9 +45,35 @@ public class Tournaments {
 
     private Integer maxParticipants;
 
+    // Add inside Tournaments.java
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Media> media = new ArrayList<>();
+
+
+
+    private Boolean openSingleEnabled;
+    private Double openSingleFee;
+
+    private Boolean openDoubleEnabled;
+    private Double openDoubleFee;
+
+    private Boolean mixedDoubleEnabled;
+    private Double mixedDoubleFee;
+
+    private Boolean womenSingleEnabled;
+    private Double womenSingleFee;
+
+
+
     @OneToMany
     List<Users> players= new ArrayList<>();
 
     @OneToMany
     List<Teams> teams = new ArrayList<>();
+
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

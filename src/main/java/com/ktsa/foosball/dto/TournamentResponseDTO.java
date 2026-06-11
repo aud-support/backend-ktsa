@@ -17,7 +17,22 @@ public class TournamentResponseDTO {
     private TournamentStatus status;
     @NotBlank
     private LocalDate startDate;
+    private LocalDate endDate;
+    private String bannerUrl;
     @NotBlank
     private String venue;
     private Double pricePool;
+    private Integer maxParticipants;
+
+    private Boolean openSingleEnabled;
+    private Double openSingleFee;
+
+    private Boolean openDoubleEnabled;
+    private Double openDoubleFee;
+
+    private Boolean mixedDoubleEnabled;
+    private Double mixedDoubleFee;
+
+    private Boolean womenSingleEnabled;
+    private Double womenSingleFee;
 }

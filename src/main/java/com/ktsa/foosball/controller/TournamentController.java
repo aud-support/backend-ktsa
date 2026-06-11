@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/tournament")
@@ -20,8 +21,9 @@ public class TournamentController {
     // CREATE Tournament
     // ---------------------------------------------------------
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> createTournament(@Valid @RequestBody TournamentRequestDTO dto) {
-        return  tournamentService.createTournament(dto);
+    public ResponseEntity<ApiResponse<?>> createTournament( @RequestPart("data") @Valid TournamentRequestDTO dto,
+                                                            @RequestPart(value = "banner", required = false) MultipartFile banner) {
+        return  tournamentService.createTournament(dto, banner);
     }
 
     // ---------------------------------------------------------
@@ -30,17 +32,54 @@ public class TournamentController {
     @GetMapping
     public ResponseEntity<ApiResponse<?>> getAllTournaments() {
         return ResponseEntity.ok(
-                ApiResponse.success(200, "Tournaments fetched successfully", tournamentService.getAllTournaments())
+                ApiResponse.success(200, "All Tournaments fetched successfully", tournamentService.getAllTournaments())
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // UPDATE Tournament
+    // ---------------------------------------------------------
+    @PutMapping("/{tournamentId}")
+    public ResponseEntity<ApiResponse<?>> updateTournament(  @PathVariable Long tournamentId,    @RequestPart("data") @Valid TournamentRequestDTO dto,
+                                                             @RequestPart(value = "banner", required = false) MultipartFile banner) {
+        return ResponseEntity.ok(
+                        ApiResponse.success(
+                                200,
+                                "Tournament updated successfully",
+
+                tournamentService.updateTournament( tournamentId, dto, banner))
+
         );
     }
 
       // ---------------------------------------------------------
-//    // FETCH TOURNAMENT BY ID
-//    // ---------------------------------------------------------
-    @GetMapping("{tournamentId}")
+      // FETCH TOURNAMENT BY ID
+      // ---------------------------------------------------------
+    @GetMapping("/{tournamentId}")
     public ResponseEntity<ApiResponse<?>> getTournamentById(@PathVariable Long tournamentId) {
         return ResponseEntity.ok(
                 ApiResponse.success(200, "Tournament fetched successfully", tournamentService.getTournamentById(tournamentId))
         );
     }
+
+
+    // ---------------------------------------------------------
+    // DELETE Tournament
+    // ---------------------------------------------------------
+    @DeleteMapping("/{tournamentId}")
+    public ResponseEntity<ApiResponse<?>> deleteTournament(  @PathVariable Long tournamentId) {
+
+        tournamentService.deleteTournament(tournamentId);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        200,
+                        "Tournament deleted  successfully",
+
+                       null)
+
+        );
+    }
+
+
 }

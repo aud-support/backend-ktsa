@@ -22,7 +22,4 @@ public class Teams {
     @ManyToOne
     private Users playerTwo;
 
-    @ManyToOne
-    private Tournaments tournament;
-
 }
