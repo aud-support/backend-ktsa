@@ -22,11 +22,19 @@ public class HomepageService {
     // Admin saves homepage content
     public void saveHomepageContent(HomepageContentDto dto, MultipartFile image) {
 
-        // 1. Upload image to S3 and get URL
-        String imageUrl = s3Service.uploadFile(image, bucket, "homepage");
+        if (image != null && !image.isEmpty()) {
 
-        // 2. Set image URL into dto
-        dto.setHeroBannerUrl(imageUrl);
+            String imageUrl = s3Service.uploadFile(image, bucket, "homepage");
+            dto.setHeroBannerUrl(imageUrl);
+
+        } else {
+
+            Map<String, Object> existing = getHomepageContent();
+
+            if (existing != null && existing.get("heroBannerUrl") != null) {
+                dto.setHeroBannerUrl(existing.get("heroBannerUrl").toString());
+            }
+        }
 
         // 3. Save JSON (with imageUrl inside) to S3
         s3Service.uploadJson(dto, bucket, HOMEPAGE_KEY);

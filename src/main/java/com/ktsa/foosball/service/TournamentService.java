@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,14 +55,15 @@ public class TournamentService {
     }
 
     public List<TournamentResponseDTO> getAllTournaments() {
-        return tournamentRepository.findAll().stream().map(tournament -> {
-            TournamentResponseDTO response = modelMapper.map(tournament, TournamentResponseDTO.class);
-// Fetch banner URL for each tournament
-            mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "banner").ifPresent(media -> response.setBannerUrl(media.getUrl()));
-
-            return response;
-
-        }).collect(Collectors.toList());
+        return tournamentRepository.findAll().stream()
+                .sorted(Comparator.comparing(Tournaments::getStartDate))
+                .map(tournament -> {
+                    TournamentResponseDTO response = modelMapper.map(tournament, TournamentResponseDTO.class);
+                    // Fetch banner URL for each tournament
+                    mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "banner")
+                            .ifPresent(media -> response.setBannerUrl(media.getUrl()));
+                    return response;
+                }).collect(Collectors.toList());
     }
 
     //
