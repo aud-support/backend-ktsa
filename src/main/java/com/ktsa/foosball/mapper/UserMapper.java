@@ -43,6 +43,7 @@ public class UserMapper {
         dto.setState(user.getState());
         dto.setDateOfBirth(user.getDateOfBirth());
         dto.setCreatedAt(user.getCreatedAt());
+        dto.setProfilePictureUrl(user.getProfilePictureUrl());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
     }

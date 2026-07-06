@@ -2,6 +2,7 @@ package com.ktsa.foosball.controller;
 
 import com.ktsa.foosball.dto.ApiResponse;
 import com.ktsa.foosball.dto.TournamentRequestDTO;
+import com.ktsa.foosball.service.RegistrationService;
 import com.ktsa.foosball.service.TournamentService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -11,11 +12,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/tournament")
-@CrossOrigin
 @AllArgsConstructor
 public class TournamentController {
 
     private TournamentService tournamentService;
+    private RegistrationService registrationService;
 
     // ---------------------------------------------------------
     // CREATE Tournament
@@ -78,6 +79,17 @@ public class TournamentController {
 
                        null)
 
+        );
+    }
+
+
+    @GetMapping("/{tournamentId}/players/search")
+    public ResponseEntity<ApiResponse<?>> searchRegisteredPlayers(
+            @PathVariable Long tournamentId,
+            @RequestParam(name = "q", defaultValue = "") String query) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Players fetched successfully",
+                        registrationService.searchRegisteredPlayers(tournamentId, query))
         );
     }
 

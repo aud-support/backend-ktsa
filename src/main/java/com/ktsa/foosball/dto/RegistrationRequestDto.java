@@ -18,4 +18,8 @@ public class RegistrationRequestDto {
 
     private String category; // Single, double, mix
 
+    private String teamName; // Required for doubles registration with partner (new team)
+
+    private Long existingTeamId; // Used when registering with an existing team
+
 }

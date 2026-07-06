@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 @RestController
-@CrossOrigin
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
@@ -55,7 +54,8 @@ public class AuthController {
         }
 
         CustomUserDetails userDetails = new CustomUserDetails(user);
-        String token = jwtUtil.generateToken(identifier, user.getRole());
+        String token = jwtUtil.generateToken(identifier, user.getRole(),
+                user.getTokenVersion());
 
         return ResponseEntity.ok(
                 ApiResponse.success(200, "Login successful", Map.of(

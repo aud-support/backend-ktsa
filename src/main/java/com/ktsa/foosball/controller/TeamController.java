@@ -8,12 +8,12 @@ import com.ktsa.foosball.service.TeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/team")
-@CrossOrigin
 @RequiredArgsConstructor
 public class TeamController {
 
@@ -37,6 +37,28 @@ public class TeamController {
     public ResponseEntity<ApiResponse<?>> getAllTeams() {
         return ResponseEntity.ok(
                 ApiResponse.success(200, "Teams fetched successfully", teamService.getAllTeams())
+        );
+    }
+
+    // ---------------------------------------------------------
+    // SEARCH Teams by name
+    // ---------------------------------------------------------
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>> searchTeams(@RequestParam String q) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Teams fetched successfully", teamService.searchTeams(q))
+        );
+    }
+
+    // ---------------------------------------------------------
+    // FIND Team by two player emails (order-independent)
+    // ---------------------------------------------------------
+    @GetMapping("/by-players")
+    public ResponseEntity<ApiResponse<?>> getTeamByPlayerEmails(
+            @RequestParam String p1,
+            @RequestParam String p2) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Team lookup successful", teamService.getTeamByPlayerEmails(p1, p2))
         );
     }
 

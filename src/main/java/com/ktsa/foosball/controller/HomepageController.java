@@ -24,7 +24,7 @@ public class HomepageController {
     @PostMapping(value = "/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateContent(
             @RequestPart("data") HomepageContentDto dto,
-            @RequestPart("image") MultipartFile image) throws JsonProcessingException {
+            @RequestPart(value = "image",  required = false) MultipartFile image) throws JsonProcessingException {
 
 //        HomepageContentDto dto = objectMapper.readValue(data, HomepageContentDto.class); // ✅ then convert
 

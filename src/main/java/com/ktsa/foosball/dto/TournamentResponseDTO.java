@@ -5,7 +5,7 @@ import com.ktsa.foosball.model.TournamentStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class TournamentResponseDTO {
@@ -15,9 +15,8 @@ public class TournamentResponseDTO {
     private String description;
     private Format format;
     private TournamentStatus status;
-    @NotBlank
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private String bannerUrl;
     @NotBlank
     private String venue;

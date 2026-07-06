@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +31,10 @@ public class Tournaments {
     private TournamentStatus status;
 
     @NotNull(message = "Date is required")
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
     @NotNull(message = "Date is required")
-    private LocalDate endDate;
+    private LocalDateTime endDate;
     private LocalDateTime createdAt;
 
     @NotNull(message = "Venue is required")

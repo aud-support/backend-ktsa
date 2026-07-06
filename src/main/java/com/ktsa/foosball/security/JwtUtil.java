@@ -18,17 +18,23 @@ public class JwtUtil {
 
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    public String generateToken(String identifier, Role role) {
+    public String generateToken(String identifier, Role role,
+                                Integer tokenVersion) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + EXPIRATION_MS);
 
         return Jwts.builder()
                 .setSubject(identifier)
                 .claim("role", role.name())
+                .claim("tokenVersion", tokenVersion)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256) //key and algo
                 .compact();
+    }
+
+    public Integer extractTokenVersion(String token) {
+        return parseClaims(token).get("tokenVersion", Integer.class);
     }
 
     public String extractUsername(String token) {
