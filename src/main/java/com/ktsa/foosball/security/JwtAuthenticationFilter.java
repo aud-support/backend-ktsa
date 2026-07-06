@@ -1,5 +1,7 @@
 package com.ktsa.foosball.security;
 
+import com.ktsa.foosball.model.Users;
+import com.ktsa.foosball.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,11 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil,
-                                   CustomUserDetailsService userDetailsService) {
+                                   CustomUserDetailsService userDetailsService,
+                                   UserRepository userRepository) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -43,12 +48,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = header.substring(7);
 
         if (!jwtUtil.isTokenValid(token)) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                    "Invalid or expired token");
-            return;  // important
+            // Don't block — let Spring Security's permitAll() handle public routes
+            filterChain.doFilter(request, response);
+            return;
         }
 
         String identifier = jwtUtil.extractUsername(token);
+        Integer tokenVersion =
+                jwtUtil.extractTokenVersion(token);
 
         if (identifier != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -71,6 +78,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // NORMAL USER
                 UserDetails userDetails =
                         userDetailsService.loadUserByUsername(identifier);
+
+                Users user = userRepository
+                        .findByEmail(identifier)
+                        .orElse(null);
+
+                if (user == null ||
+                        !tokenVersion.equals(user.getTokenVersion())) {
+
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(

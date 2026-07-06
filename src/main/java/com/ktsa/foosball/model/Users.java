@@ -38,6 +38,8 @@ public class Users {
     @Column(unique = true, length = 10)
     private Long phoneNumber;
 
+    private String profilePictureUrl;
+
     @Enumerated(EnumType.STRING)
     private Gender gender;//male,female,other
 
@@ -60,6 +62,8 @@ public class Users {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    @Column(nullable = false)
+    private Integer tokenVersion = 1;
 
     @ManyToOne
     @JsonIgnore

@@ -85,5 +85,20 @@ public class GlobalExceptionHandler {
                 ApiResponse.error(403, e.getMessage(), null)
         );
     }
+
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<?>> handleBadRequest(BadRequestException e) {
+        return ResponseEntity.status(400).body(
+                ApiResponse.error(400, e.getMessage(), null)
+        );
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNotFoundException(NotFoundException e) {
+        return ResponseEntity.status(404).body(
+                ApiResponse.error(404, e.getMessage(), null)
+        );
+    }
 }
 

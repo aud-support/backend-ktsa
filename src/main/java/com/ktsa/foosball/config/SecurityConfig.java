@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/homepage/**").permitAll()
                         .requestMatchers("/api/rankings/**").permitAll()
                         .requestMatchers("/api/team/**").permitAll()
+                        .requestMatchers("/api/matches/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
