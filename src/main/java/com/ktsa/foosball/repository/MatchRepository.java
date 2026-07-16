@@ -3,7 +3,7 @@ package com.ktsa.foosball.repository;
 import com.ktsa.foosball.model.Matches;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface MatchRepository  extends JpaRepository<Matches, Long> {
 
@@ -21,5 +21,5 @@ public interface MatchRepository  extends JpaRepository<Matches, Long> {
             Long teamTwoTeamId
     );
 
-    Collection<Object> findByTournamentId(Long tournamentId);
+    List<Matches> findByTournamentId(Long tournamentId);
 }

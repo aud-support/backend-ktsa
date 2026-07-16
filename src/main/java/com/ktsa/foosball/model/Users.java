@@ -35,6 +35,9 @@ public class Users {
     @Column(unique = true,nullable = false)
     private String email;
 
+//    @Column(unique = true, nullable = false, length = 50)
+    private String userName;
+
     @Column(unique = true, length = 10)
     private Long phoneNumber;
 

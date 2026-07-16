@@ -11,5 +11,6 @@ public class PlayerSearchDto {
 
     private Long id;
     private String name;
+    private String userName;
     private String email;
 }

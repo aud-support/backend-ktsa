@@ -146,7 +146,7 @@ public class TeamService {
                 );
             }
         } else {
-            resolvedName = playerOne.getName() + " & " + playerTwo.getName();
+            resolvedName = playerOne.getName()+"_"+ playerOne.getId() + " & " + playerTwo.getName()+"_"+playerTwo.getId();
         }
 
         Teams team = new Teams();

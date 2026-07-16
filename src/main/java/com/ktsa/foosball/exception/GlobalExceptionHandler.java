@@ -4,12 +4,14 @@ package com.ktsa.foosball.exception;
 import com.ktsa.foosball.dto.ApiResponse;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.persistence.NonUniqueResultException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +100,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleNotFoundException(NotFoundException e) {
         return ResponseEntity.status(404).body(
                 ApiResponse.error(404, e.getMessage(), null)
+        );
+    }
+
+    /**
+     * Handles cases where a query that expects a single result finds multiple rows.
+     * This is a data/logic issue — we surface it as a 409 Conflict with a clear message.
+     */
+    @ExceptionHandler({NonUniqueResultException.class, IncorrectResultSizeDataAccessException.class})
+    public ResponseEntity<ApiResponse<?>> handleNonUniqueResult(Exception e) {
+        return ResponseEntity.status(409).body(
+                ApiResponse.error(409,
+                        "A duplicate registration record was detected. " +
+                        "You may already be registered for this category or tournament. " +
+                        "Please check your existing registrations.",
+                        null)
         );
     }
 }

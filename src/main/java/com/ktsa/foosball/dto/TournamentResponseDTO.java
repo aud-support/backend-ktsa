@@ -34,4 +34,6 @@ public class TournamentResponseDTO {
 
     private Boolean womenSingleEnabled;
     private Double womenSingleFee;
+
+    private Boolean registrationClosed;
 }
