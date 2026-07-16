@@ -62,6 +62,8 @@ public class Tournaments {
     private Boolean womenSingleEnabled;
     private Double womenSingleFee;
 
+    private Boolean registrationClosed;
+
 
 
     @OneToMany

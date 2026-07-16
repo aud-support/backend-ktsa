@@ -2,6 +2,7 @@ package com.ktsa.foosball.controller;
 
 import com.ktsa.foosball.dto.ApiResponse;
 import com.ktsa.foosball.dto.MatchRequestDto;
+import com.ktsa.foosball.dto.MatchUpdateDto;
 import com.ktsa.foosball.service.MatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,16 @@ public class MatchController {
     public ResponseEntity<ApiResponse<?>> getAllMatches(@PathVariable Long tournamentId) {
 
         return ResponseEntity.ok(
-                ApiResponse.success(200, "Match created successfully",matchService.getAllMatches(tournamentId)));
+                ApiResponse.success(200, "Matches fetched successfully", matchService.getAllMatches(tournamentId)));
     }
 
+    @PutMapping("/{matchId}")
+    public ResponseEntity<ApiResponse<?>> updateMatch(
+            @PathVariable Long matchId,
+            @RequestBody MatchUpdateDto request) {
 
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Match updated successfully", matchService.updateMatch(matchId, request)));
+    }
 
 }

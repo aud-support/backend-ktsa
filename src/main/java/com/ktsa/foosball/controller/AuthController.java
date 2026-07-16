@@ -36,8 +36,12 @@ public class AuthController {
 
         // ADMIN LOGIN
         if (identifier.equalsIgnoreCase(ADMIN_EMAIL) && password.equals(ADMIN_PASSWORD)) {
+            String adminToken = jwtUtil.generateToken(ADMIN_EMAIL, com.ktsa.foosball.model.Role.ADMIN, 0);
             return ResponseEntity.ok(
-                    ApiResponse.success(200, "Login successful", Map.of("role", "ADMIN"))
+                    ApiResponse.success(200, "Login successful", Map.of(
+                            "token", adminToken,
+                            "role", "ADMIN"
+                    ))
             );
         }
 

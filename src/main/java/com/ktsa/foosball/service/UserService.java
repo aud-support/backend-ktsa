@@ -38,18 +38,30 @@ public class UserService {
 
 
     public UserResponseDTO createUser(UserRequestDTO dto) {
-        Users saved = userRepository.save(userMapper.toEntity(dto));
+        // Check for duplicate email before attempting to save
+        if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new com.ktsa.foosball.exception.BadRequestException(
+                    "A player already exists with this email address: " + dto.getEmail());
+        }
+
+        Users savedUser = userRepository.save(userMapper.toEntity(dto));
+
+        // Generate username using the ID
+        savedUser.setUserName(userMapper.generateUserName(savedUser.getName(), savedUser.getId()));
+
+        // Save again with the username
+        savedUser = userRepository.save(savedUser);
 
         Ranking ranking = Ranking.builder()
                 .points(0)
                 .wins(0)
                 .losses(0)
-                .user(saved)
+                .user(savedUser)
                 .build();
 
         rankingRepository.save(ranking);
 
-        return userMapper.toDTO(saved);
+        return userMapper.toDTO(savedUser);
     }
 
     public List<UserResponseDTO> getAllUsers() {
