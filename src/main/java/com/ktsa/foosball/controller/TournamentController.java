@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -152,5 +154,22 @@ public class TournamentController {
         );
     }
 
+    // ---------------------------------------------------------
+    // EXPORT REGISTRATIONS as Excel (.xlsx)
+    // GET /api/tournaments/{tournamentId}/registrations/export
+    // Registration must be closed before export is allowed.
+    // ---------------------------------------------------------
+    @GetMapping("/{tournamentId}/registrations/export")
+    public ResponseEntity<byte[]> exportRegistrations(@PathVariable Long tournamentId) {
+        byte[] excelBytes = registrationService.exportRegistrationsAsExcel(tournamentId);
+
+        String filename = "tournament_" + tournamentId + "_registrations.xlsx";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(excelBytes);
+    }
 
 }

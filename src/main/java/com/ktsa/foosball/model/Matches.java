@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
@@ -20,7 +18,7 @@ public class Matches {
     private Long id;
 
     private String stage;
-    private String scheduledAt;
+    private LocalDateTime scheduledAt;
     private String status;
     private LocalDateTime startDate;
     private LocalDateTime createdAt;

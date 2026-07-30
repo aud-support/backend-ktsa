@@ -119,6 +119,13 @@
 			<scope>test</scope>
 		</dependency>
 
+        <!-- Apache POI — Excel (.xlsx) export -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.3.0</version>
+        </dependency>
+
         <!-- JWT (older version 0.11.0) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

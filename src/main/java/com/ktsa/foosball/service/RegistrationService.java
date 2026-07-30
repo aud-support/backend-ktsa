@@ -12,8 +12,13 @@ import com.ktsa.foosball.repository.RegistrationRepository;
 import com.ktsa.foosball.repository.TournamentRepository;
 import com.ktsa.foosball.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -490,5 +495,120 @@ public class RegistrationService {
         }
 
         return "Successfully registered for all selected categories.";
+    }
+
+    // ---------------------------------------------------------------
+    // Export registrations as Excel (.xlsx) for a tournament
+    // ---------------------------------------------------------------
+
+    /**
+     * Validates that registration is closed for the tournament, then builds and
+     * returns an Excel workbook byte array containing all registration rows.
+     *
+     * Columns: #, Player Username, Player Name, Category, Team Name,
+     *          Partner Username, Partner Name, Status, Registration Date
+     */
+    public byte[] exportRegistrationsAsExcel(Long tournamentId) {
+        Tournaments tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+
+        if (tournament.getRegistrationClosed() == null || !tournament.getRegistrationClosed()) {
+            throw new BadRequestException(
+                    "Registration must be closed before exporting. Please close registration first."
+            );
+        }
+
+        List<Registration> registrations = registrationRepository.findAllByTournamentId(tournamentId);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Registrations");
+
+            // ── Header style ──
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+
+            // ── Header row ──
+            String[] headers = {
+                "#", "Player Username", "Player Name", "Category",
+                "Team Name", "Partner Username", "Partner Name",
+                "Status", "Registration Date"
+            };
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // ── Data rows ──
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            int rowNum = 1;
+            for (Registration reg : registrations) {
+                Row row = sheet.createRow(rowNum++);
+
+                // Serial number
+                row.createCell(0).setCellValue(rowNum - 1);
+
+                // Player info (singles / free-agent rows)
+                Users player = reg.getPlayer();
+                row.createCell(1).setCellValue(player != null ? nvl(player.getUserName()) : "");
+                row.createCell(2).setCellValue(player != null ? nvl(player.getName()) : "");
+
+                // Category
+                row.createCell(3).setCellValue(nvl(reg.getCategory()));
+
+                // Team info (doubles rows)
+                Teams team = reg.getTeam();
+                if (team != null) {
+                    row.createCell(4).setCellValue(nvl(team.getTeamName()));
+
+                    // Determine which member is "player" and which is "partner"
+                    Users p1 = team.getPlayerOne();
+                    Users p2 = team.getPlayerTwo();
+
+                    // For doubles, player cell shows player one
+                    row.createCell(1).setCellValue(p1 != null ? nvl(p1.getUserName()) : "");
+                    row.createCell(2).setCellValue(p1 != null ? nvl(p1.getName()) : "");
+
+                    // Partner
+                    row.createCell(5).setCellValue(p2 != null ? nvl(p2.getUserName()) : "");
+                    row.createCell(6).setCellValue(p2 != null ? nvl(p2.getName()) : "");
+                } else {
+                    row.createCell(4).setCellValue("");
+                    row.createCell(5).setCellValue("");
+                    row.createCell(6).setCellValue("");
+                }
+
+                // Status
+                row.createCell(7).setCellValue(nvl(reg.getStatus()));
+
+                // Registration date
+                row.createCell(8).setCellValue(
+                        reg.getRegisteredAt() != null ? reg.getRegisteredAt().format(formatter) : ""
+                );
+            }
+
+            // Auto-size all columns
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate Excel export", e);
+        }
+    }
+
+    /** Null-safe string helper. */
+    private String nvl(String value) {
+        return value != null ? value : "";
     }
 }
