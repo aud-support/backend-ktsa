@@ -565,7 +565,11 @@ public class RegistrationService {
                 // Team info (doubles rows)
                 Teams team = reg.getTeam();
                 if (team != null) {
-                    row.createCell(4).setCellValue(nvl(team.getTeamName()));
+                    // Use challongeTeamName (userName1 & userName2) for consistency
+                    String exportName = (team.getChallongeTeamName() != null && !team.getChallongeTeamName().isBlank())
+                            ? team.getChallongeTeamName()
+                            : team.getTeamName();
+                    row.createCell(4).setCellValue(nvl(exportName));
 
                     // Determine which member is "player" and which is "partner"
                     Users p1 = team.getPlayerOne();

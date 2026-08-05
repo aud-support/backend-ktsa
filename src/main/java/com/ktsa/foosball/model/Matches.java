@@ -42,6 +42,10 @@ public class Matches {
     @ManyToOne
     private Tournaments tournament;
     private Integer roundNumber;
+
+    /** Challonge match ID — used to avoid duplicate sync inserts */
+    @Column(name = "challonge_match_id")
+    private Long challongeMatchId;
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

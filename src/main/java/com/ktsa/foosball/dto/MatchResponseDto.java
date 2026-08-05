@@ -22,6 +22,10 @@ public class MatchResponseDto {
     private String teamOne;
     private String teamTwo;
 
+    /** Challonge-format identifier: "userName1 & userName2" — for Challonge sync reference */
+    private String teamOneChallongeName;
+    private String teamTwoChallongeName;
+
     private Long teamOneScore;
     private Long teamTwoScore;
     private String winnerTeam;

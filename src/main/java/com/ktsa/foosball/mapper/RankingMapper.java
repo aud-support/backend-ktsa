@@ -8,14 +8,16 @@ import org.springframework.stereotype.Component;
 public class RankingMapper {
 
     public RankingResponseDTO toDTO(Ranking ranking) {
+        boolean hasUser = ranking.getUser() != null;
         return RankingResponseDTO.builder()
                 .id(ranking.getId())
                 .points(ranking.getPoints())
                 .wins(ranking.getWins())
                 .losses(ranking.getLosses())
-                .userName(ranking.getUser().getName())
-                .email(ranking.getUser().getEmail())
-                .gender(ranking.getUser().getGender())
+                .matches(ranking.getWins() + ranking.getLosses())
+                .userName(hasUser ? ranking.getUser().getName() : "Unknown")
+                .email(hasUser ? ranking.getUser().getEmail() : null)
+                .gender(hasUser ? ranking.getUser().getGender() : null)
                 .build();
     }
 }

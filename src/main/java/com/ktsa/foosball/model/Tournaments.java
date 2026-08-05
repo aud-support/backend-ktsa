@@ -64,6 +64,9 @@ public class Tournaments {
 
     private Boolean registrationClosed;
 
+    /** Challonge tournament URL (e.g. "akash12345") — used to sync bracket data */
+    private String challongeUrl;
+
 
 
     @OneToMany
