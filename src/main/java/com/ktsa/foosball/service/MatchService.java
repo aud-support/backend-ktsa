@@ -195,9 +195,11 @@ public class MatchService {
         }
         if (match.getTeamOne() != null) {
             dto.setTeamOneName(match.getTeamOne().getTeamName());
+            dto.setTeamOneChallongeName(match.getTeamOne().getChallongeTeamName());
         }
         if (match.getTeamTwo() != null) {
             dto.setTeamTwoName(match.getTeamTwo().getTeamName());
+            dto.setTeamTwoChallongeName(match.getTeamTwo().getChallongeTeamName());
         }
         if (match.getWinnerTeam() != null) {
             dto.setWinnerTeam(match.getWinnerTeam().getTeamName());

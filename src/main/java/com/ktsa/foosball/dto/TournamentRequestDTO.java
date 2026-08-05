@@ -36,4 +36,6 @@ public class TournamentRequestDTO {
 
     private Boolean registrationClosed;
 
+    private String challongeUrl;
+
 }

@@ -36,4 +36,6 @@ public class TournamentResponseDTO {
     private Double womenSingleFee;
 
     private Boolean registrationClosed;
+
+    private String challongeUrl;
 }

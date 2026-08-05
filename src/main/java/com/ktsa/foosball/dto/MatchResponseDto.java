@@ -1,15 +1,19 @@
 package com.ktsa.foosball.dto;
 
-import java.time.LocalDateTime;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class MatchResponseDto {
 
     private Long id;
     private String stage;
-    private String scheduledAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime scheduledAt;
+
     private String status;
 
     // Frontend expects these field names (names as strings)
@@ -17,6 +21,10 @@ public class MatchResponseDto {
     private String playerTwo;
     private String teamOne;
     private String teamTwo;
+
+    /** Challonge-format identifier: "userName1 & userName2" — for Challonge sync reference */
+    private String teamOneChallongeName;
+    private String teamTwoChallongeName;
 
     private Long teamOneScore;
     private Long teamTwoScore;
