@@ -18,8 +18,6 @@ public interface UserRepository extends JpaRepository<Users, Long> {
 
     boolean existsByUserName(String userName);
 
-    Optional<Users> findByUserName(String userName);
-
     @Query("SELECT COUNT(u) FROM Users u WHERE u.userName LIKE CONCAT(:base, '%')")
     long countByUserNameStartingWith(@Param("base") String base);
 }

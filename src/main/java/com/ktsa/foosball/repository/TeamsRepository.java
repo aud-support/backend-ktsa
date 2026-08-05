@@ -17,8 +17,6 @@ public interface TeamsRepository extends JpaRepository<Teams, Long> {
 
     List<Teams> findByTeamNameContainingIgnoreCase(String query);
 
-    Optional<Teams> findByChallongeTeamName(String challongeTeamName);
-
     @Query("""
 SELECT t FROM Teams t
 WHERE

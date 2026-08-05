@@ -52,12 +52,6 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     );
 
     /**
-     * Fetch every registration row for a given tournament (for export).
-     */
-    @Query("SELECT r FROM Registration r LEFT JOIN FETCH r.player LEFT JOIN FETCH r.team WHERE r.tournamentId = :tournamentId ORDER BY r.registeredAt ASC")
-    List<Registration> findAllByTournamentId(@Param("tournamentId") Long tournamentId);
-
-    /**
      * Find all registrations for a team in a tournament (any category).
      * A team should only be in one doubles category per tournament.
      */

@@ -79,15 +79,4 @@ ORDER BY
     END DESC
 """)
     Page<Tournaments> findAllOrdered(Pageable pageable);
-
-    /**
-     * Find all tournaments whose start date has passed but registration
-     * is not yet marked as closed. Used by the auto-close scheduler.
-     */
-    @Query("""
-        SELECT t FROM Tournaments t
-        WHERE t.startDate <= :now
-          AND (t.registrationClosed IS NULL OR t.registrationClosed = false)
-    """)
-    List<Tournaments> findTournamentsToAutoClose(@Param("now") LocalDateTime now);
 }

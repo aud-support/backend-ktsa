@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -18,7 +20,7 @@ public class Matches {
     private Long id;
 
     private String stage;
-    private LocalDateTime scheduledAt;
+    private String scheduledAt;
     private String status;
     private LocalDateTime startDate;
     private LocalDateTime createdAt;
@@ -42,10 +44,6 @@ public class Matches {
     @ManyToOne
     private Tournaments tournament;
     private Integer roundNumber;
-
-    /** Challonge match ID — used to avoid duplicate sync inserts */
-    @Column(name = "challonge_match_id")
-    private Long challongeMatchId;
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
