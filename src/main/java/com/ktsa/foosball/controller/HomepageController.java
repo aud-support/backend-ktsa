@@ -3,6 +3,7 @@ package com.ktsa.foosball.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ktsa.foosball.dto.ArticleDto;
 import com.ktsa.foosball.dto.HomepageContentDto;
+import com.ktsa.foosball.dto.ServiceDto;
 import com.ktsa.foosball.service.HomepageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -65,5 +66,36 @@ public class HomepageController {
     public ResponseEntity<String> deleteArticle(@PathVariable String id) {
         homepageService.deleteArticle(id);
         return ResponseEntity.ok("Article deleted successfully");
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Services
+    // ──────────────────────────────────────────────────────────────
+
+    /** GET /api/homepage/services — fetch all services (public) */
+    @GetMapping("/services")
+    public ResponseEntity<List<ServiceDto>> getServices() {
+        return ResponseEntity.ok(homepageService.getServices());
+    }
+
+    /** POST /api/homepage/services — create a new service */
+    @PostMapping("/services")
+    public ResponseEntity<ServiceDto> createService(@RequestBody ServiceDto dto) {
+        return ResponseEntity.ok(homepageService.createService(dto));
+    }
+
+    /** PUT /api/homepage/services/{id} — update an existing service */
+    @PutMapping("/services/{id}")
+    public ResponseEntity<ServiceDto> updateService(
+            @PathVariable String id,
+            @RequestBody ServiceDto dto) {
+        return ResponseEntity.ok(homepageService.updateService(id, dto));
+    }
+
+    /** DELETE /api/homepage/services/{id} — remove a service */
+    @DeleteMapping("/services/{id}")
+    public ResponseEntity<String> deleteService(@PathVariable String id) {
+        homepageService.deleteService(id);
+        return ResponseEntity.ok("Service deleted successfully");
     }
 }
