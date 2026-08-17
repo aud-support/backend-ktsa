@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/matches/**").permitAll()
                         .requestMatchers("/api/about-us/**").permitAll()
                         .requestMatchers("/api/footer/**").permitAll()
+                        .requestMatchers("/api/sponsors/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
