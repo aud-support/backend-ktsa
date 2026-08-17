@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ktsa.foosball.dto.ArticleDto;
 import com.ktsa.foosball.dto.HomepageContentDto;
+import com.ktsa.foosball.dto.ServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class HomepageService {
 
     private static final String HOMEPAGE_KEY  = "homepage/content.json";
     private static final String ARTICLES_KEY  = "homepage/articles.json";
+    private static final String SERVICES_KEY  = "homepage/services.json";
 
     // ──────────────────────────────────────────────────────────────
     // Homepage content (hero / videos)
@@ -111,5 +113,68 @@ public class HomepageService {
             throw new RuntimeException("Article not found: " + id);
         }
         saveArticles(articles);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Services
+    // ──────────────────────────────────────────────────────────────
+
+    /** Read all services from S3; returns empty list if none saved yet. */
+    public List<ServiceDto> getServices() {
+        try {
+            Map<String, Object> raw = s3Service.readJson(bucket, SERVICES_KEY);
+            // The JSON is stored as {"services": [...]}
+            Object list = raw.get("services");
+            if (list == null) return new ArrayList<>();
+            String json = objectMapper.writeValueAsString(list);
+            return objectMapper.readValue(json, new TypeReference<List<ServiceDto>>() {});
+        } catch (NoSuchKeyException e) {
+            // File doesn't exist yet — first run
+            return new ArrayList<>();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read services from S3", e);
+        }
+    }
+
+    /** Persist the full service list to S3. */
+    private void saveServices(List<ServiceDto> services) {
+        Map<String, Object> wrapper = Map.of("services", services);
+        s3Service.uploadJson(wrapper, bucket, SERVICES_KEY);
+    }
+
+    public ServiceDto createService(ServiceDto dto) {
+        dto.setId(UUID.randomUUID().toString());
+        List<ServiceDto> services = getServices();
+        dto.setDisplayOrder(services.size()); // Auto-set order
+        services.add(dto);
+        saveServices(services);
+        return dto;
+    }
+
+    public ServiceDto updateService(String id, ServiceDto dto) {
+        List<ServiceDto> services = getServices();
+        boolean found = false;
+        for (int i = 0; i < services.size(); i++) {
+            if (services.get(i).getId().equals(id)) {
+                dto.setId(id); // keep the same id
+                services.set(i, dto);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new RuntimeException("Service not found: " + id);
+        }
+        saveServices(services);
+        return dto;
+    }
+
+    public void deleteService(String id) {
+        List<ServiceDto> services = getServices();
+        boolean removed = services.removeIf(s -> s.getId().equals(id));
+        if (!removed) {
+            throw new RuntimeException("Service not found: " + id);
+        }
+        saveServices(services);
     }
 }
