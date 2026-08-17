@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RankingService {
 
-    private static final int POINTS_PER_WIN = 3;
-
     public static final String MENS_SINGLES   = "MENS_SINGLES";
     public static final String WOMENS_SINGLES = "WOMENS_SINGLES";
     public static final String OPEN_DOUBLES   = "OPEN_DOUBLES";
@@ -52,18 +50,25 @@ public class RankingService {
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
         List<Matches> completed = matchRepository.findAllCompletedMatches();
-        int wins = 0, losses = 0;
+
+        // [wins, losses, totalPoints]
+        int[] stats = new int[]{0, 0, 0};
 
         for (Matches m : completed) {
             if (!isSinglesMatch(m)) continue;
-            Long p1 = m.getPlayerOne().getId();
-            Long p2 = m.getPlayerTwo().getId();
-            if (!userId.equals(p1) && !userId.equals(p2)) continue;
+            Long p1Id = m.getPlayerOne().getId();
+            Long p2Id = m.getPlayerTwo().getId();
+            if (!userId.equals(p1Id) && !userId.equals(p2Id)) continue;
+
+            boolean isPlayerOne = userId.equals(p1Id);
+            Long myScore = isPlayerOne ? m.getTeamOneScore() : m.getTeamTwoScore();
+
+            if (myScore != null) stats[2] += (int) (long) myScore;
 
             Long winnerId = resolveWinnerPlayer(m);
             if (winnerId != null) {
-                if (userId.equals(winnerId)) wins++;
-                else losses++;
+                if (userId.equals(winnerId)) stats[0]++;
+                else stats[1]++;
             }
         }
 
@@ -72,10 +77,10 @@ public class RankingService {
 
         return RankingResponseDTO.builder()
                 .id(ranking.map(Ranking::getId).orElse(null))
-                .wins(wins)
-                .losses(losses)
-                .matches(wins + losses)
-                .points(wins * POINTS_PER_WIN)
+                .wins(stats[0])
+                .losses(stats[1])
+                .matches(stats[0] + stats[1])
+                .points(stats[2])
                 .userName(user.getName())
                 .email(user.getEmail())
                 .gender(user.getGender())
@@ -88,70 +93,69 @@ public class RankingService {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Builds rankings for one singles category.
+     * points = sum of actual match scores the player scored across every
+     *          completed match in every tournament.
      *
-     * Player registry = union of:
-     *   (a) Users who have a Ranking row with matching gender
-     *   (b) Users who appear in a completed singles match with matching gender
-     *
-     * Winner is resolved as:
-     *   1. winnerPlayer field (if set)
-     *   2. Higher score (if scores are available and not equal)
+     * Category filter: explicit match.category first, then gender inference
+     * for backwards compatibility with older matches.
      */
     private List<RankingResponseDTO> buildSinglesRankings(
             List<Matches> completedMatches, String category) {
 
         Gender targetGender = category.equals(MENS_SINGLES) ? Gender.MALE : Gender.FEMALE;
 
-        // --- aggregate stats from matches ---
-        // userId -> [wins, losses]
+        // userId -> [wins, losses, totalPoints]
         Map<Long, int[]> statsMap = new HashMap<>();
-        // collect all users seen in matches of this gender
         Map<Long, Users> seenUsers = new HashMap<>();
 
         for (Matches m : completedMatches) {
             if (!isSinglesMatch(m)) continue;
 
+            // prefer explicit category; fall back to gender inference
+            if (m.getCategory() != null) {
+                if (!category.equals(m.getCategory())) continue;
+            } else {
+                if (m.getPlayerOne().getGender() != targetGender
+                        || m.getPlayerTwo().getGender() != targetGender) continue;
+            }
+
             Users p1 = m.getPlayerOne();
             Users p2 = m.getPlayerTwo();
 
-            if (p1.getGender() != targetGender || p2.getGender() != targetGender) continue;
-
             seenUsers.put(p1.getId(), p1);
             seenUsers.put(p2.getId(), p2);
+            statsMap.putIfAbsent(p1.getId(), new int[]{0, 0, 0});
+            statsMap.putIfAbsent(p2.getId(), new int[]{0, 0, 0});
 
-            statsMap.putIfAbsent(p1.getId(), new int[]{0, 0});
-            statsMap.putIfAbsent(p2.getId(), new int[]{0, 0});
+            // accumulate actual scores across ALL tournaments
+            int p1Score = m.getTeamOneScore() != null ? (int) (long) m.getTeamOneScore() : 0;
+            int p2Score = m.getTeamTwoScore() != null ? (int) (long) m.getTeamTwoScore() : 0;
+            statsMap.get(p1.getId())[2] += p1Score;
+            statsMap.get(p2.getId())[2] += p2Score;
 
             Long winnerId = resolveWinnerPlayer(m);
             if (winnerId != null) {
                 Long loserId = winnerId.equals(p1.getId()) ? p2.getId() : p1.getId();
-                statsMap.get(winnerId)[0]++; // win
-                statsMap.get(loserId)[1]++;  // loss
+                statsMap.get(winnerId)[0]++;
+                statsMap.get(loserId)[1]++;
             }
         }
 
-        // --- build player registry: Ranking rows + anyone seen in matches ---
         Map<Long, Users> registry = new LinkedHashMap<>();
-
-        // first add from Ranking table (preserves existing registered players)
         rankingRepository.findAll().stream()
                 .filter(r -> r.getUser() != null)
                 .filter(r -> r.getUser().getGender() == targetGender)
                 .forEach(r -> registry.put(r.getUser().getId(), r.getUser()));
-
-        // then add anyone who played but may not have a Ranking row yet
         seenUsers.forEach(registry::putIfAbsent);
 
-        // --- build DTOs ---
         return registry.values().stream()
                 .map(user -> {
-                    int[] s = statsMap.getOrDefault(user.getId(), new int[]{0, 0});
+                    int[] s = statsMap.getOrDefault(user.getId(), new int[]{0, 0, 0});
                     return RankingResponseDTO.builder()
                             .wins(s[0])
                             .losses(s[1])
                             .matches(s[0] + s[1])
-                            .points(s[0] * POINTS_PER_WIN)
+                            .points(s[2])
                             .userName(user.getName())
                             .email(user.getEmail())
                             .gender(user.getGender())
@@ -167,23 +171,26 @@ public class RankingService {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Builds rankings for one doubles category.
+     * points = sum of actual match scores the team scored across every
+     *          completed match in every tournament.
      *
-     * Team registry = all teams that appeared in at least one completed match
-     * of this category.
-     *
-     * Winner resolved the same way: winnerTeam first, then higher score.
+     * Category filter: explicit match.category first, then composition inference.
      */
     private List<RankingResponseDTO> buildDoublesRankings(
             List<Matches> completedMatches, String category) {
 
-        // teamId -> [wins, losses]
+        // teamId -> [wins, losses, totalPoints]
         Map<Long, int[]> teamStatsMap = new LinkedHashMap<>();
         Map<Long, Teams> teamRegistry = new LinkedHashMap<>();
 
         for (Matches m : completedMatches) {
             if (!isDoublesMatch(m)) continue;
-            if (!matchesDoublesCategory(m, category)) continue;
+
+            if (m.getCategory() != null) {
+                if (!category.equals(m.getCategory())) continue;
+            } else {
+                if (!matchesDoublesCategory(m, category)) continue;
+            }
 
             Teams t1 = m.getTeamOne();
             Teams t2 = m.getTeamTwo();
@@ -192,8 +199,14 @@ public class RankingService {
 
             teamRegistry.putIfAbsent(t1Id, t1);
             teamRegistry.putIfAbsent(t2Id, t2);
-            teamStatsMap.putIfAbsent(t1Id, new int[]{0, 0});
-            teamStatsMap.putIfAbsent(t2Id, new int[]{0, 0});
+            teamStatsMap.putIfAbsent(t1Id, new int[]{0, 0, 0});
+            teamStatsMap.putIfAbsent(t2Id, new int[]{0, 0, 0});
+
+            // accumulate actual scores across ALL tournaments
+            int t1Score = m.getTeamOneScore() != null ? (int) (long) m.getTeamOneScore() : 0;
+            int t2Score = m.getTeamTwoScore() != null ? (int) (long) m.getTeamTwoScore() : 0;
+            teamStatsMap.get(t1Id)[2] += t1Score;
+            teamStatsMap.get(t2Id)[2] += t2Score;
 
             Long winnerTeamId = resolveWinnerTeam(m);
             if (winnerTeamId != null) {
@@ -206,8 +219,8 @@ public class RankingService {
         return teamRegistry.entrySet().stream()
                 .map(entry -> {
                     Teams team = entry.getValue();
-                    int[] s = teamStatsMap.getOrDefault(entry.getKey(), new int[]{0, 0});
-                    return toDoublesDTO(team, s[0], s[1], category);
+                    int[] s = teamStatsMap.getOrDefault(entry.getKey(), new int[]{0, 0, 0});
+                    return toDoublesDTO(team, s[0], s[1], s[2], category);
                 })
                 .sorted(Comparator.comparingInt(RankingResponseDTO::getPoints).reversed())
                 .collect(Collectors.toList());
@@ -217,42 +230,28 @@ public class RankingService {
     // WINNER RESOLUTION
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Resolves the winning player for a singles match.
-     * Priority: explicit winnerPlayer field → higher score → null (draw/unknown)
-     */
     private Long resolveWinnerPlayer(Matches m) {
-        // 1. explicit winner
         if (m.getWinnerPlayer() != null) {
             return m.getWinnerPlayer().getId();
         }
-        // 2. infer from scores
         if (m.getTeamOneScore() != null && m.getTeamTwoScore() != null) {
-            if (m.getTeamOneScore() > m.getTeamTwoScore()) {
+            if (m.getTeamOneScore() > m.getTeamTwoScore())
                 return m.getPlayerOne() != null ? m.getPlayerOne().getId() : null;
-            } else if (m.getTeamTwoScore() > m.getTeamOneScore()) {
+            if (m.getTeamTwoScore() > m.getTeamOneScore())
                 return m.getPlayerTwo() != null ? m.getPlayerTwo().getId() : null;
-            }
         }
-        return null; // draw or no score data
+        return null;
     }
 
-    /**
-     * Resolves the winning team for a doubles match.
-     * Priority: explicit winnerTeam field → higher score → null
-     */
     private Long resolveWinnerTeam(Matches m) {
-        // 1. explicit winner
         if (m.getWinnerTeam() != null) {
             return m.getWinnerTeam().getTeamId();
         }
-        // 2. infer from scores
         if (m.getTeamOneScore() != null && m.getTeamTwoScore() != null) {
-            if (m.getTeamOneScore() > m.getTeamTwoScore()) {
+            if (m.getTeamOneScore() > m.getTeamTwoScore())
                 return m.getTeamOne() != null ? m.getTeamOne().getTeamId() : null;
-            } else if (m.getTeamTwoScore() > m.getTeamOneScore()) {
+            if (m.getTeamTwoScore() > m.getTeamOneScore())
                 return m.getTeamTwo() != null ? m.getTeamTwo().getTeamId() : null;
-            }
         }
         return null;
     }
@@ -270,10 +269,6 @@ public class RankingService {
         return m.getTeamOne() != null && m.getTeamTwo() != null;
     }
 
-    /**
-     * Mixed Doubles = at least one team has players of different genders.
-     * Open Doubles  = all teams are same-gender.
-     */
     private boolean matchesDoublesCategory(Matches m, String category) {
         boolean isMixed = isTeamMixed(m.getTeamOne()) || isTeamMixed(m.getTeamTwo());
         return category.equals(MIXED_DOUBLES) ? isMixed : !isMixed;
@@ -286,7 +281,8 @@ public class RankingService {
         return g1 != null && g2 != null && g1 != g2;
     }
 
-    private RankingResponseDTO toDoublesDTO(Teams team, int wins, int losses, String category) {
+    private RankingResponseDTO toDoublesDTO(Teams team, int wins, int losses,
+                                            int totalPoints, String category) {
         String p1Name = team.getPlayerOne() != null ? team.getPlayerOne().getName() : "?";
         String p2Name = team.getPlayerTwo() != null ? team.getPlayerTwo().getName() : "?";
         return RankingResponseDTO.builder()
@@ -294,7 +290,7 @@ public class RankingService {
                 .wins(wins)
                 .losses(losses)
                 .matches(wins + losses)
-                .points(wins * POINTS_PER_WIN)
+                .points(totalPoints)
                 .userName(p1Name + " & " + p2Name)
                 .category(category)
                 .build();
