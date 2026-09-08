@@ -24,9 +24,27 @@ public interface MatchRepository extends JpaRepository<Matches, Long> {
 
     List<Matches> findByTournamentId(Long tournamentId);
 
+    List<Matches> findByTournamentIdAndCategory(Long tournamentId, String category);
+
     java.util.Optional<Matches> findByTournamentIdAndChallongeMatchId(Long tournamentId, Long challongeMatchId);
 
     /** All completed matches (singles and doubles) */
     @Query("SELECT m FROM Matches m WHERE m.status = 'COMPLETED'")
     List<Matches> findAllCompletedMatches();
+
+    /**
+     * All matches where the given user is playerOne, playerTwo,
+     * or a member of teamOne or teamTwo.
+     */
+    @Query("""
+        SELECT DISTINCT m FROM Matches m
+        WHERE m.playerOne.id = :userId
+           OR m.playerTwo.id = :userId
+           OR m.teamOne.playerOne.id = :userId
+           OR m.teamOne.playerTwo.id = :userId
+           OR m.teamTwo.playerOne.id = :userId
+           OR m.teamTwo.playerTwo.id = :userId
+        ORDER BY m.scheduledAt DESC NULLS LAST
+        """)
+    List<Matches> findAllMatchesForUser(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

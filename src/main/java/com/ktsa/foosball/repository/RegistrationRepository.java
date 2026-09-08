@@ -57,6 +57,9 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     @Query("SELECT r FROM Registration r LEFT JOIN FETCH r.player LEFT JOIN FETCH r.team WHERE r.tournamentId = :tournamentId ORDER BY r.registeredAt ASC")
     List<Registration> findAllByTournamentId(@Param("tournamentId") Long tournamentId);
 
+    /** Count total registrations for a tournament — used for capacity check. */
+    long countByTournamentId(Long tournamentId);
+
     /**
      * Find all registrations for a team in a tournament (any category).
      * A team should only be in one doubles category per tournament.

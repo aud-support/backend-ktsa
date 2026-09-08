@@ -35,6 +35,13 @@ public class MatchResponseDto {
     private int roundNumber;
     private long tournamentId;
 
+    /** Category this match belongs to */
+    private String category;
+
+    /** Convenience fields for player-facing views */
+    private String tournamentName;
+    private String venue;
+
     // Helper setters used by service layer (map entity name fields to DTO fields)
     public void setPlayerOneName(String name) { this.playerOne = name; }
     public void setPlayerTwoName(String name) { this.playerTwo = name; }

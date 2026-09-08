@@ -19,4 +19,7 @@ public class MatchRequestDto {
     private Long teamOne;
     private Long teamTwo;
     private Integer roundNumber;
+
+    /** Category this match belongs to — e.g. "Open Singles", "Mixed Doubles" */
+    private String category;
 }

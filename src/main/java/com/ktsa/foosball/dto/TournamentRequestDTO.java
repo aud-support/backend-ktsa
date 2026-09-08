@@ -24,15 +24,31 @@ public class TournamentRequestDTO {
 
     private Boolean openSingleEnabled;
     private Double openSingleFee;
+    private String openSingleChallongeUrl;
 
     private Boolean openDoubleEnabled;
     private Double openDoubleFee;
+    private String openDoubleChallongeUrl;
 
     private Boolean mixedDoubleEnabled;
     private Double mixedDoubleFee;
+    private String mixedDoubleChallongeUrl;
 
     private Boolean womenSingleEnabled;
     private Double womenSingleFee;
+    private String womenSingleChallongeUrl;
+
+    private Boolean mensSingleEnabled;
+    private Double mensSingleFee;
+    private String mensSingleChallongeUrl;
+
+    private Boolean underSixteenEnabled;
+    private Double underSixteenFee;
+    private String underSixteenChallongeUrl;
+
+    private Boolean aboveSixteenEnabled;
+    private Double aboveSixteenFee;
+    private String aboveSixteenChallongeUrl;
 
     private Boolean registrationClosed;
 
