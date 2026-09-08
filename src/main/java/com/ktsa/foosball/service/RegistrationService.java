@@ -37,6 +37,9 @@ public class RegistrationService {
     // ---------------------------------------------------------------
     private static final String CAT_OPEN_SINGLE = "Open Single";
     private static final String CAT_WOMEN_SINGLE = "Women Single";
+    private static final String CAT_MENS_SINGLE = "Men Single";
+    private static final String CAT_UNDER_16 = "Under 16";
+    private static final String CAT_ABOVE_16 = "Above 16";
     private static final String CAT_OPEN_DOUBLE = "Open Double";
     private static final String CAT_MIXED_DOUBLE = "Mixed Double";
 
@@ -61,7 +64,13 @@ public class RegistrationService {
 
     private boolean isSingleCategory(String category) {
         String n = normaliseCategory(category);
-        return n != null && (n.equals("open single") || n.equals("women single"));
+        return n != null && (
+            n.equals("open single") ||
+            n.equals("women single") ||
+            n.equals("men single") ||
+            n.equals("under 16") ||
+            n.equals("above 16")
+        );
     }
 
     private boolean isDoubleCategory(String category) {
@@ -76,16 +85,37 @@ public class RegistrationService {
      */
     private void validateSingleGender(Users player, String category) {
         String n = normaliseCategory(category);
-        System.out.println("[RegistrationService] validateSingleGender: raw='" + category + "' normalised='" + n + "' gender=" + player.getGender());
         if ("women single".equals(n)) {
-            if (player.getGender() == null || player.getGender() != Gender.FEMALE) {
+            if (player.getGender() == null) {
                 throw new BadRequestException(
-                        "Women's Singles is restricted to female players only. Your account gender is: "
-                                + (player.getGender() != null ? player.getGender().name() : "not set") + "."
+                        "Women's Singles is open to female players only. Your account does not have a gender set. "
+                        + "Please update your profile with the correct gender before registering."
+                );
+            }
+            if (player.getGender() != Gender.FEMALE) {
+                throw new BadRequestException(
+                        "Women's Singles is open to female players only. "
+                        + "Your account is registered as " + player.getGender().name() + ". "
+                        + "Please register for a suitable category such as Men's Singles or Open Singles."
                 );
             }
         }
-        // Open Single: no restriction
+        if ("men single".equals(n)) {
+            if (player.getGender() == null) {
+                throw new BadRequestException(
+                        "Men's Singles is open to male players only. Your account does not have a gender set. "
+                        + "Please update your profile with the correct gender before registering."
+                );
+            }
+            if (player.getGender() != Gender.MALE) {
+                throw new BadRequestException(
+                        "Men's Singles is open to male players only. "
+                        + "Your account is registered as " + player.getGender().name() + ". "
+                        + "Please register for a suitable category such as Women's Singles or Open Singles."
+                );
+            }
+        }
+        // Open Single / Under 16 / Above 16: no gender restriction
     }
 
     /**
@@ -98,12 +128,25 @@ public class RegistrationService {
         if ("mixed double".equals(n)) {
             Gender g1 = player1.getGender();
             Gender g2 = player2.getGender();
+            if (g1 == null || g2 == null) {
+                String whoIsMissing = (g1 == null && g2 == null)
+                        ? "Both players have"
+                        : (g1 == null ? "\"" + player1.getName() + "\" has" : "\"" + player2.getName() + "\" has");
+                throw new BadRequestException(
+                        "Mixed Doubles requires one male and one female player. "
+                        + whoIsMissing + " no gender set on their profile. "
+                        + "Both players must update their profiles before registering."
+                );
+            }
             boolean oneMaleOneFemale =
                     (g1 == Gender.MALE && g2 == Gender.FEMALE) ||
                             (g1 == Gender.FEMALE && g2 == Gender.MALE);
             if (!oneMaleOneFemale) {
                 throw new BadRequestException(
-                        "Mixed Doubles requires exactly one male and one female player in the pair."
+                        "Mixed Doubles requires one male and one female player. "
+                        + "\"" + player1.getName() + "\" is " + g1.name() + " and "
+                        + "\"" + player2.getName() + "\" is " + g2.name() + ". "
+                        + "Please choose a different partner or register for Open Doubles instead."
                 );
             }
         }
@@ -117,18 +160,22 @@ public class RegistrationService {
     public String registerPlayer(RegistrationRequestDto dto, Long tournamentId) {
 
         Tournaments tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
         Users player = userRepository.findByEmail(dto.getPlayerOneEmail())
-                .orElseThrow(() -> new NotFoundException("No account found for email: " + dto.getPlayerOneEmail()));
+                .orElseThrow(() -> new NotFoundException(
+                        "No player account found for the email \"" + dto.getPlayerOneEmail() + "\". "
+                        + "Please make sure you are using the email address linked to your KTSA account."));
 
         if (dto.getCategory() == null || dto.getCategory().isBlank()) {
-            throw new BadRequestException("Category is required");
+            throw new BadRequestException("Please select a category before submitting your registration.");
         }
 
         if (isDoubleCategory(dto.getCategory())) {
             throw new BadRequestException(
-                    "Doubles categories must be registered using the partner registration endpoint."
+                    "\"" + dto.getCategory() + "\" is a doubles category and cannot be registered here. "
+                    + "Please use the doubles registration option and provide your partner's details."
             );
         }
 
@@ -141,14 +188,20 @@ public class RegistrationService {
                 .isEmpty();
         if (alreadyRegistered) {
             throw new BadRequestException(
-                    "You are already registered for the \"" + dto.getCategory() + "\" category in this tournament."
+                    "You are already registered for \"" + dto.getCategory() + "\" in this tournament. "
+                    + "Each player can only register once per category."
             );
         }
 
         // Capacity check
-        if (tournament.getMaxParticipants() != null &&
-                tournament.getPlayers().size() >= tournament.getMaxParticipants()) {
-            throw new BadRequestException("This tournament is full and is no longer accepting registrations.");
+        if (tournament.getMaxParticipants() != null) {
+            long registered = registrationRepository.countByTournamentId(tournamentId);
+            if (registered >= tournament.getMaxParticipants()) {
+                throw new BadRequestException(
+                        "This tournament has reached its maximum capacity of " + tournament.getMaxParticipants()
+                        + " participants and is no longer accepting new registrations."
+                );
+            }
         }
 
         Registration registration = new Registration();
@@ -158,7 +211,7 @@ public class RegistrationService {
         registration.setStatus("REGISTERED");
 
         registrationRepository.save(registration);
-        return "Player registered successfully";
+        return "You have been successfully registered for \"" + dto.getCategory() + "\".";
     }
 
     /**
@@ -176,7 +229,6 @@ public class RegistrationService {
 
         if (existing.isEmpty()) return;
 
-        // Take the first registration to build the error message
         Registration reg = existing.get(0);
         Teams existingTeam = reg.getTeam();
 
@@ -185,9 +237,10 @@ public class RegistrationService {
                 : existingTeam.getPlayerOne();
 
         throw new BadRequestException(
-                "\"" + player.getName() + "\" is already registered as part of the doubles team \""
-                        + existingTeam.getTeamName() + "\" (with \"" + partner.getName()
-                        + "\") in this tournament. A player can only be in one doubles team per tournament."
+                "\"" + player.getName() + "\" is already registered in the doubles team \""
+                        + existingTeam.getTeamName() + "\" (partnered with \"" + partner.getName()
+                        + "\") for this tournament. A player can only be part of one doubles team per tournament. "
+                        + "Please remove the existing doubles registration first if you wish to change teams."
         );
     }
 
@@ -197,23 +250,32 @@ public class RegistrationService {
 
     public String registerTeam(RegistrationRequestDto dto, Long tournamentId) {
         tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
         Users player1 = userRepository.findByEmail(dto.getPlayerOneEmail())
-                .orElseThrow(() -> new NotFoundException("No account found for email: " + dto.getPlayerOneEmail()));
+                .orElseThrow(() -> new NotFoundException(
+                        "No player account found for the email \"" + dto.getPlayerOneEmail() + "\". "
+                        + "Please make sure you are using the email address linked to your KTSA account."));
 
         if (dto.getPlayerTwoEmail() == null || dto.getPlayerTwoEmail().isBlank()) {
-            throw new BadRequestException("Partner email is required for doubles registration.");
+            throw new BadRequestException(
+                    "Your partner's email address is required to complete doubles registration. "
+                    + "Please enter your partner's registered KTSA email and try again.");
         }
 
         if (dto.getPlayerOneEmail().equalsIgnoreCase(dto.getPlayerTwoEmail())) {
-            throw new BadRequestException("You cannot register with yourself as a partner.");
+            throw new BadRequestException(
+                    "You cannot register with yourself as a partner. "
+                    + "Please provide your actual partner's email address.");
         }
 
         Users player2 = userRepository.findByEmail(dto.getPlayerTwoEmail())
-                .orElseThrow(() -> new NotFoundException("No account found for partner email: " + dto.getPlayerTwoEmail()));
+                .orElseThrow(() -> new NotFoundException(
+                        "No player account found for the partner email \"" + dto.getPlayerTwoEmail() + "\". "
+                        + "Your partner must have a registered KTSA account before you can register together."));
 
-// Check if either player is already in another doubles team
+        // Check if either player is already in another doubles team
         validatePlayerAlreadyRegisteredInDoubles(tournamentId, player1);
         validatePlayerAlreadyRegisteredInDoubles(tournamentId, player2);
 
@@ -229,8 +291,8 @@ public class RegistrationService {
             String existingCat = registrationRepository.findAllByTournamentIdAndTeam(tournamentId, team)
                     .get(0).getCategory();
             throw new BadRequestException(
-                    "Your team is already registered for \"" + existingCat +
-                            "\" in this tournament. A team can only enter one doubles category per tournament."
+                    "Your team \"" + team.getTeamName() + "\" is already registered for \"" + existingCat
+                    + "\" in this tournament. A team can only enter one doubles category per tournament."
             );
         }
 
@@ -241,18 +303,23 @@ public class RegistrationService {
         registration.setStatus("REGISTERED");
 
         registrationRepository.save(registration);
-        return "Team registered successfully for \"" + registration.getCategory() + "\"";
+        return "Your team has been successfully registered for \"" + registration.getCategory() + "\".";
     }
 
     public String registerNeedPartner(RegistrationRequestDto dto, Long tournamentId) {
         tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
         Users player = userRepository.findByEmail(dto.getPlayerOneEmail())
-                .orElseThrow(() -> new NotFoundException("No account found for email: " + dto.getPlayerOneEmail()));
+                .orElseThrow(() -> new NotFoundException(
+                        "No player account found for the email \"" + dto.getPlayerOneEmail() + "\". "
+                        + "Please make sure you are using the email address linked to your KTSA account."));
 
         if (dto.getPartnerPreference() == null || dto.getPartnerPreference().isBlank()) {
-            throw new BadRequestException("Role preference is required when registering as a free agent.");
+            throw new BadRequestException(
+                    "Please select your preferred playing role (e.g. Defender, Attacker, or All-rounder) "
+                    + "so we can match you with a suitable partner.");
         }
 
         Registration registration = new Registration();
@@ -263,24 +330,26 @@ public class RegistrationService {
         registration.setStatus("NEEDS_PARTNER");
 
         registrationRepository.save(registration);
-        return "Registered successfully. You will be matched with a partner.";
+        return "You have been added to the partner matching pool for \"" + registration.getCategory()
+                + "\". We will notify you once a suitable partner is found.";
     }
 
     public String registerWithExistingTeam(RegistrationRequestDto dto, Long tournamentId) {
         tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
         if (dto.getExistingTeamId() == null) {
-            throw new BadRequestException("Team ID is required.");
+            throw new BadRequestException(
+                    "No team was selected. Please choose an existing team from your saved teams to proceed.");
         }
 
         Teams team = teamService.getTeamById(dto.getExistingTeamId());
 
-        // Gender validation: load both players from the team
         Users player1 = team.getPlayerOne();
         Users player2 = team.getPlayerTwo();
 
-        // Exclude the team itself so it doesn't block re-registration for different category
+        // Exclude the team itself so it doesn't block re-registration for a different category
         validateNotAlreadyInAnotherDoublesTeam(tournamentId, player1, team.getTeamId());
         validateNotAlreadyInAnotherDoublesTeam(tournamentId, player2, team.getTeamId());
 
@@ -293,8 +362,8 @@ public class RegistrationService {
             String existingCat = registrationRepository.findAllByTournamentIdAndTeam(tournamentId, team)
                     .get(0).getCategory();
             throw new BadRequestException(
-                    "This team is already registered for \"" + existingCat +
-                            "\" in this tournament. A team can only enter one doubles category per tournament."
+                    "Your team \"" + team.getTeamName() + "\" is already registered for \"" + existingCat
+                    + "\" in this tournament. A team can only enter one doubles category per tournament."
             );
         }
 
@@ -305,7 +374,8 @@ public class RegistrationService {
         registration.setStatus("REGISTERED");
 
         registrationRepository.save(registration);
-        return "Team registered successfully for \"" + registration.getCategory() + "\"";
+        return "Your team \"" + team.getTeamName() + "\" has been successfully registered for \""
+                + registration.getCategory() + "\".";
     }
 
     public List<PlayerSearchDto> searchRegisteredPlayers(Long tournamentId, String query) {
@@ -328,15 +398,18 @@ public class RegistrationService {
     public String validateAndRegisterAll(BatchRegistrationRequestDto dto, Long tournamentId) {
 
         Tournaments tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new NotFoundException("Tournament not found"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
         if (dto.getCategories() == null || dto.getCategories().isEmpty()) {
-            throw new BadRequestException("At least one category must be selected.");
+            throw new BadRequestException("Please select at least one category to register for.");
         }
 
         // Resolve main player once
         Users playerOne = userRepository.findByEmail(dto.getPlayerOneEmail())
-                .orElseThrow(() -> new NotFoundException("No account found for email: " + dto.getPlayerOneEmail()));
+                .orElseThrow(() -> new NotFoundException(
+                        "No player account found for the email \"" + dto.getPlayerOneEmail() + "\". "
+                        + "Please make sure you are using the email address linked to your KTSA account."));
 
         // Resolve partner once (if any doubles category uses WITH_PARTNER)
         Users playerTwo = null;
@@ -344,13 +417,19 @@ public class RegistrationService {
                 .anyMatch(c -> "WITH_PARTNER".equalsIgnoreCase(c.getDoublesMode()));
         if (needsPartner) {
             if (dto.getPlayerTwoEmail() == null || dto.getPlayerTwoEmail().isBlank()) {
-                throw new BadRequestException("Partner email is required for doubles registration.");
+                throw new BadRequestException(
+                        "Your partner's email address is required for doubles registration. "
+                        + "Please enter your partner's registered KTSA email and try again.");
             }
             if (dto.getPlayerOneEmail().equalsIgnoreCase(dto.getPlayerTwoEmail())) {
-                throw new BadRequestException("You cannot register with yourself as a partner.");
+                throw new BadRequestException(
+                        "You cannot register with yourself as a partner. "
+                        + "Please provide your actual partner's email address.");
             }
             playerTwo = userRepository.findByEmail(dto.getPlayerTwoEmail())
-                    .orElseThrow(() -> new NotFoundException("No account found for partner email: " + dto.getPlayerTwoEmail()));
+                    .orElseThrow(() -> new NotFoundException(
+                            "No player account found for the partner email \"" + dto.getPlayerTwoEmail() + "\". "
+                            + "Your partner must have a registered KTSA account before you can register together."));
         }
 
         // Resolve existing team once (if any doubles category uses EXISTING_TEAM)
@@ -359,7 +438,8 @@ public class RegistrationService {
                 .anyMatch(c -> "EXISTING_TEAM".equalsIgnoreCase(c.getDoublesMode()));
         if (usesExistingTeam) {
             if (dto.getExistingTeamId() == null) {
-                throw new BadRequestException("Team ID is required when registering with an existing team.");
+                throw new BadRequestException(
+                        "No team was selected. Please choose an existing team from your saved teams to proceed.");
             }
             existingTeam = teamService.getTeamById(dto.getExistingTeamId());
         }
@@ -374,7 +454,6 @@ public class RegistrationService {
             try {
                 if (isDoubleCategory(cat)) {
                     if ("WITH_PARTNER".equalsIgnoreCase(mode)) {
-
 
                         // New validation
                         validatePlayerAlreadyRegisteredInDoubles(tournamentId, playerOne);
@@ -392,12 +471,11 @@ public class RegistrationService {
                                         .findAllByTournamentIdAndTeam(tournamentId, tentativeTeam)
                                         .get(0).getCategory();
                                 throw new BadRequestException(
-                                        "Your team is already registered for \"" + existingCat + "\" in this tournament.");
+                                        "Your team is already registered for \"" + existingCat
+                                        + "\" in this tournament. A team can only enter one doubles category per tournament.");
                             }
                         }
                     } else if ("EXISTING_TEAM".equalsIgnoreCase(mode)) {
-                        // Exclude the existing team itself — it's allowed to register again
-                        // only if it's for a different doubles category
                         validateNotAlreadyInAnotherDoublesTeam(
                                 tournamentId,
                                 existingTeam.getPlayerOne(),
@@ -415,14 +493,19 @@ public class RegistrationService {
                                     .findAllByTournamentIdAndTeam(tournamentId, existingTeam)
                                     .get(0).getCategory();
                             throw new BadRequestException(
-                                    "This team is already registered for \"" + existingCat + "\" in this tournament.");
+                                    "Your team \"" + existingTeam.getTeamName() + "\" is already registered for \""
+                                    + existingCat + "\" in this tournament. A team can only enter one doubles category per tournament.");
                         }
                     } else if ("NEED_PARTNER".equalsIgnoreCase(mode)) {
                         if (dto.getPartnerPreference() == null || dto.getPartnerPreference().isBlank()) {
-                            throw new BadRequestException("Role preference is required when registering as a free agent.");
+                            throw new BadRequestException(
+                                    "Please select your preferred playing role (e.g. Defender, Attacker, or All-rounder) "
+                                    + "so we can match you with a suitable partner.");
                         }
                     } else {
-                        throw new BadRequestException("Doubles mode is required for doubles categories.");
+                        throw new BadRequestException(
+                                "\"" + cat + "\" is a doubles category but no doubles mode was specified. "
+                                + "Please choose one of: Register with a Partner, Use an Existing Team, or Find a Partner.");
                     }
                 } else {
                     // Singles
@@ -432,14 +515,19 @@ public class RegistrationService {
                             .isEmpty();
                     if (dupSingle) {
                         throw new BadRequestException(
-                                "You are already registered for \"" + cat + "\" in this tournament.");
+                                "You are already registered for \"" + cat + "\" in this tournament. "
+                                + "Each player can only register once per category.");
                     }
                 }
 
                 // Capacity check (applies to all)
-                if (tournament.getMaxParticipants() != null &&
-                        tournament.getPlayers().size() >= tournament.getMaxParticipants()) {
-                    throw new BadRequestException("This tournament is full and is no longer accepting registrations.");
+                if (tournament.getMaxParticipants() != null) {
+                    long registered = registrationRepository.countByTournamentId(tournamentId);
+                    if (registered >= tournament.getMaxParticipants()) {
+                        throw new BadRequestException(
+                                "This tournament has reached its maximum capacity of " + tournament.getMaxParticipants()
+                                + " participants and is no longer accepting new registrations.");
+                    }
                 }
 
             } catch (BadRequestException | NotFoundException ex) {
@@ -465,6 +553,7 @@ public class RegistrationService {
                     reg.setTournamentId(tournamentId);
                     reg.setCategory(cat);
                     reg.setStatus("REGISTERED");
+                    reg.setUtrNumber(dto.getUtrNumber());
                     registrationRepository.save(reg);
 
                 } else if ("EXISTING_TEAM".equalsIgnoreCase(mode)) {
@@ -473,6 +562,7 @@ public class RegistrationService {
                     reg.setTournamentId(tournamentId);
                     reg.setCategory(cat);
                     reg.setStatus("REGISTERED");
+                    reg.setUtrNumber(dto.getUtrNumber());
                     registrationRepository.save(reg);
 
                 } else if ("NEED_PARTNER".equalsIgnoreCase(mode)) {
@@ -482,6 +572,7 @@ public class RegistrationService {
                     reg.setCategory(cat);
                     reg.setPartnerPreference(dto.getPartnerPreference());
                     reg.setStatus("NEEDS_PARTNER");
+                    reg.setUtrNumber(dto.getUtrNumber());
                     registrationRepository.save(reg);
                 }
             } else {
@@ -490,6 +581,7 @@ public class RegistrationService {
                 reg.setTournamentId(tournamentId);
                 reg.setCategory(cat);
                 reg.setStatus("REGISTERED");
+                reg.setUtrNumber(dto.getUtrNumber());
                 registrationRepository.save(reg);
             }
         }
@@ -503,10 +595,11 @@ public class RegistrationService {
 
     /**
      * Validates that registration is closed for the tournament, then builds and
-     * returns an Excel workbook byte array containing all registration rows.
+     * returns an Excel workbook byte array.
      *
-     * Columns: #, Player Username, Player Name, Category, Team Name,
-     *          Partner Username, Partner Name, Status, Registration Date
+     * One sheet per enabled category — each sheet has the same columns:
+     * #, Player Username, Player Name, Team Name, Partner Username, Partner Name,
+     * Status, UTR Number, Registration Date
      */
     public byte[] exportRegistrationsAsExcel(Long tournamentId) {
         Tournaments tournament = tournamentRepository.findById(tournamentId)
@@ -514,92 +607,134 @@ public class RegistrationService {
 
         if (tournament.getRegistrationClosed() == null || !tournament.getRegistrationClosed()) {
             throw new BadRequestException(
-                    "Registration must be closed before exporting. Please close registration first."
+                    "Registration for \"" + tournament.getTournamentName() + "\" is still open. "
+                    + "Please close registration before generating the export."
             );
         }
 
-        List<Registration> registrations = registrationRepository.findAllByTournamentId(tournamentId);
+        List<Registration> all = registrationRepository.findAllByTournamentId(tournamentId);
+
+        // ── Build ordered map of category → registrations (no duplicates) ──
+        java.util.LinkedHashMap<String, List<Registration>> byCategory = new java.util.LinkedHashMap<>();
+
+        // Preferred display order
+        java.util.List<String> preferredOrder = java.util.Arrays.asList(
+                "Open Singles", "Open Single",
+                "Women's Singles", "Women Single",
+                "Men's Singles", "Men Single",
+                "Under 16", "Above 16",
+                "Open Doubles", "Open Double",
+                "Mixed Doubles", "Mixed Double"
+        );
+
+        // Group all registrations by their category string (case-insensitive dedup via preferredOrder)
+        java.util.Map<String, List<Registration>> rawGroups = all.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r.getCategory() != null ? r.getCategory() : "Uncategorised",
+                        java.util.LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        // First: insert in preferred order (skip categories not in data)
+        for (String preferred : preferredOrder) {
+            for (java.util.Map.Entry<String, List<Registration>> e : rawGroups.entrySet()) {
+                if (preferred.equalsIgnoreCase(e.getKey()) && !byCategory.containsKey(e.getKey())) {
+                    byCategory.put(e.getKey(), e.getValue());
+                }
+            }
+        }
+
+        // Then: append any remaining categories not covered by preferred order
+        for (java.util.Map.Entry<String, List<Registration>> e : rawGroups.entrySet()) {
+            byCategory.putIfAbsent(e.getKey(), e.getValue());
+        }
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Registrations");
 
-            // ── Header style ──
+            // ── Shared styles ──
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillForegroundColor(IndexedColors.CORNFLOWER_BLUE.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             headerStyle.setBorderBottom(BorderStyle.THIN);
 
-            // ── Header row ──
             String[] headers = {
-                "#", "Player Username", "Player Name", "Category",
-                "Team Name", "Partner Username", "Partner Name",
-                "Status", "Registration Date"
+                "#", "Player UserName", "Player Name",
+                "Challonge TeamName", "Partner Username", "Partner Name",
+                "Status", "UTR Number", "Registration Date"
             };
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
-            }
 
-            // ── Data rows ──
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-            int rowNum = 1;
-            for (Registration reg : registrations) {
-                Row row = sheet.createRow(rowNum++);
 
-                // Serial number
-                row.createCell(0).setCellValue(rowNum - 1);
+            // ── One sheet per category ──
+            for (java.util.Map.Entry<String, List<Registration>> entry : byCategory.entrySet()) {
+                String categoryName = entry.getKey();
+                List<Registration> regs = entry.getValue();
 
-                // Player info (singles / free-agent rows)
-                Users player = reg.getPlayer();
-                row.createCell(1).setCellValue(player != null ? nvl(player.getUserName()) : "");
-                row.createCell(2).setCellValue(player != null ? nvl(player.getName()) : "");
+                // Excel sheet names max 31 chars, no special chars
+                String sheetName = categoryName.length() > 31
+                        ? categoryName.substring(0, 31)
+                        : categoryName;
 
-                // Category
-                row.createCell(3).setCellValue(nvl(reg.getCategory()));
+                Sheet sheet = workbook.createSheet(sheetName);
 
-                // Team info (doubles rows)
-                Teams team = reg.getTeam();
-                if (team != null) {
-                    // Use challongeTeamName (userName1 & userName2) for consistency
-                    String exportName = (team.getChallongeTeamName() != null && !team.getChallongeTeamName().isBlank())
-                            ? team.getChallongeTeamName()
-                            : team.getTeamName();
-                    row.createCell(4).setCellValue(nvl(exportName));
-
-                    // Determine which member is "player" and which is "partner"
-                    Users p1 = team.getPlayerOne();
-                    Users p2 = team.getPlayerTwo();
-
-                    // For doubles, player cell shows player one
-                    row.createCell(1).setCellValue(p1 != null ? nvl(p1.getUserName()) : "");
-                    row.createCell(2).setCellValue(p1 != null ? nvl(p1.getName()) : "");
-
-                    // Partner
-                    row.createCell(5).setCellValue(p2 != null ? nvl(p2.getUserName()) : "");
-                    row.createCell(6).setCellValue(p2 != null ? nvl(p2.getName()) : "");
-                } else {
-                    row.createCell(4).setCellValue("");
-                    row.createCell(5).setCellValue("");
-                    row.createCell(6).setCellValue("");
+                // Header row
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headers.length; i++) {
+                    Cell cell = headerRow.createCell(i);
+                    cell.setCellValue(headers[i]);
+                    cell.setCellStyle(headerStyle);
                 }
 
-                // Status
-                row.createCell(7).setCellValue(nvl(reg.getStatus()));
+                // Data rows
+                int rowNum = 1;
+                for (Registration reg : regs) {
+                    Row row = sheet.createRow(rowNum++);
 
-                // Registration date
-                row.createCell(8).setCellValue(
-                        reg.getRegisteredAt() != null ? reg.getRegisteredAt().format(formatter) : ""
-                );
+                    row.createCell(0).setCellValue(rowNum - 1);
+
+                    Teams team = reg.getTeam();
+                    Users player = reg.getPlayer();
+
+                    if (team != null) {
+                        Users p1 = team.getPlayerOne();
+                        Users p2 = team.getPlayerTwo();
+
+                        row.createCell(1).setCellValue(p1 != null ? nvl(p1.getUserName()) : "");
+                        row.createCell(2).setCellValue(p1 != null ? nvl(p1.getName()) : "");
+
+                        String exportName = (team.getChallongeTeamName() != null && !team.getChallongeTeamName().isBlank())
+                                ? team.getChallongeTeamName()
+                                : team.getTeamName();
+                        row.createCell(3).setCellValue(nvl(exportName));
+
+                        row.createCell(4).setCellValue(p2 != null ? nvl(p2.getUserName()) : "");
+                        row.createCell(5).setCellValue(p2 != null ? nvl(p2.getName()) : "");
+                    } else {
+                        row.createCell(1).setCellValue(player != null ? nvl(player.getUserName()) : "");
+                        row.createCell(2).setCellValue(player != null ? nvl(player.getName()) : "");
+                        row.createCell(3).setCellValue("");
+                        row.createCell(4).setCellValue("");
+                        row.createCell(5).setCellValue("");
+                    }
+
+                    row.createCell(6).setCellValue(nvl(reg.getStatus()));
+                    row.createCell(7).setCellValue(nvl(reg.getUtrNumber()));
+                    row.createCell(8).setCellValue(
+                            reg.getRegisteredAt() != null ? reg.getRegisteredAt().format(formatter) : "");
+                }
+
+                // Auto-size all columns
+                for (int i = 0; i < headers.length; i++) {
+                    sheet.autoSizeColumn(i);
+                }
             }
 
-            // Auto-size all columns
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
+            // If no registrations at all, add a placeholder sheet
+            if (byCategory.isEmpty()) {
+                workbook.createSheet("No Registrations");
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -36,26 +36,29 @@ public class TournamentService {
     private String tournamentsBucket;
 
 
-    public ResponseEntity<ApiResponse<?>> createTournament(TournamentRequestDTO dto, MultipartFile banner) {
+    public ResponseEntity<ApiResponse<?>> createTournament(TournamentRequestDTO dto, MultipartFile banner, MultipartFile qrCode) {
 
         Tournaments tournament = modelMapper.map(dto, Tournaments.class);
 
+        Tournaments saved = tournamentRepository.save(tournament);
 
-        // Upload first, set URL on entity before saving
         if (banner != null && !banner.isEmpty()) {
             String bannerUrl = s3Service.uploadFile(banner, tournamentsBucket, "banners");
-
-            Tournaments saved = tournamentRepository.save(tournament);
-            saveTournamentMedia(saved, bannerUrl, "banner"); // ← also log in media table
-            return ResponseEntity.ok(ApiResponse.success(200, "Tournament created successfully", modelMapper.map(saved, TournamentResponseDTO.class)));
+            saveTournamentMedia(saved, bannerUrl, "banner");
         }
 
+        if (qrCode != null && !qrCode.isEmpty()) {
+            String qrUrl = s3Service.uploadFile(qrCode, tournamentsBucket, "qrcodes");
+            saveTournamentMedia(saved, qrUrl, "qrcode");
+        }
 
-        Tournaments createdTournament = tournamentRepository.save(tournament);
+        TournamentResponseDTO response = modelMapper.map(saved, TournamentResponseDTO.class);
+        mediaRepository.findByTournamentIdAndLabel(saved.getId(), "banner")
+                .ifPresent(m -> response.setBannerUrl(m.getUrl()));
+        mediaRepository.findByTournamentIdAndLabel(saved.getId(), "qrcode")
+                .ifPresent(m -> response.setQrCodeUrl(m.getUrl()));
 
-
-        return ResponseEntity.ok(ApiResponse.success(200, "Team created successfully", modelMapper.map(createdTournament, TournamentResponseDTO.class)));
-
+        return ResponseEntity.ok(ApiResponse.success(200, "Tournament created successfully", response));
     }
 
     public Map<String, Object> getAllTournaments(int page, int size) {
@@ -82,6 +85,8 @@ public class TournamentService {
                     // Fetch banner URL for each tournament
                     mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "banner")
                             .ifPresent(media -> response.setBannerUrl(media.getUrl()));
+                    mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "qrcode")
+                            .ifPresent(media -> response.setQrCodeUrl(media.getUrl()));
                     return response;
                 }) .collect(Collectors.toList());
 
@@ -119,6 +124,8 @@ public class TournamentService {
                     TournamentResponseDTO response = modelMapper.map(tournament, TournamentResponseDTO.class);
                     mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "banner")
                             .ifPresent(media -> response.setBannerUrl(media.getUrl()));
+                    mediaRepository.findByTournamentIdAndLabel(tournament.getId(), "qrcode")
+                            .ifPresent(media -> response.setQrCodeUrl(media.getUrl()));
                     return response;
                 }) .collect(Collectors.toList());
 
@@ -154,29 +161,26 @@ public class TournamentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament not found with id: " + tournamentId));
         TournamentResponseDTO response = modelMapper.map(tournament, TournamentResponseDTO.class);
 
-        // fetch banner
         mediaRepository.findByTournamentIdAndLabel(tournamentId, "banner")
                 .ifPresent(media -> response.setBannerUrl(media.getUrl()));
+        mediaRepository.findByTournamentIdAndLabel(tournamentId, "qrcode")
+                .ifPresent(media -> response.setQrCodeUrl(media.getUrl()));
 
         return response;
     }
 
 
-    public TournamentResponseDTO updateTournament(Long tournamentId, TournamentRequestDTO dto, MultipartFile banner) {
+    public TournamentResponseDTO updateTournament(Long tournamentId, TournamentRequestDTO dto, MultipartFile banner, MultipartFile qrCode) {
         Tournaments existingTournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament not found with id: " + tournamentId));
 
         modelMapper.map(dto, existingTournament);
         Tournaments updatedTournament = tournamentRepository.save(existingTournament);
 
-        // update banner if present
         if (banner != null && !banner.isEmpty()) {
-
             String bannerUrl = s3Service.uploadFile(banner, tournamentsBucket, "banners");
-
             Media media = mediaRepository.findByTournamentIdAndLabel(tournamentId, "banner")
                     .orElse(new Media());
-
             media.setTournament(updatedTournament);
             media.setLabel("banner");
             media.setFileType("IMAGE");
@@ -184,13 +188,24 @@ public class TournamentService {
             mediaRepository.save(media);
         }
 
-        TournamentResponseDTO response = modelMapper.map(updatedTournament, TournamentResponseDTO.class);
+        if (qrCode != null && !qrCode.isEmpty()) {
+            String qrUrl = s3Service.uploadFile(qrCode, tournamentsBucket, "qrcodes");
+            Media media = mediaRepository.findByTournamentIdAndLabel(tournamentId, "qrcode")
+                    .orElse(new Media());
+            media.setTournament(updatedTournament);
+            media.setLabel("qrcode");
+            media.setFileType("IMAGE");
+            media.setUrl(qrUrl);
+            mediaRepository.save(media);
+        }
 
+        TournamentResponseDTO response = modelMapper.map(updatedTournament, TournamentResponseDTO.class);
         mediaRepository.findByTournamentIdAndLabel(tournamentId, "banner")
                 .ifPresent(media -> response.setBannerUrl(media.getUrl()));
+        mediaRepository.findByTournamentIdAndLabel(tournamentId, "qrcode")
+                .ifPresent(media -> response.setQrCodeUrl(media.getUrl()));
 
         return response;
-
     }
 
     public void deleteTournament(Long tournamentId) {

@@ -137,6 +137,9 @@ public class MatchService {
         match.setStatus(request.getStatus());
         match.setScheduledAt(request.getScheduledAt());
         match.setRoundNumber(request.getRoundNumber());
+        if (request.getCategory() != null) {
+            match.setCategory(request.getCategory());
+        }
 
         Matches saved = matchRepository.save(match);
 
@@ -144,13 +147,19 @@ public class MatchService {
     }
 
     public List<MatchResponseDto> getAllMatches(Long tournamentId) {
+        return getAllMatches(tournamentId, null);
+    }
+
+    public List<MatchResponseDto> getAllMatches(Long tournamentId, String category) {
 
         tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        return matchRepository.findByTournamentId(tournamentId).stream()
-                .map(this::toResponseDto)
-                .toList();
+        List<Matches> matches = (category != null && !category.isBlank())
+                ? matchRepository.findByTournamentIdAndCategory(tournamentId, category)
+                : matchRepository.findByTournamentId(tournamentId);
+
+        return matches.stream().map(this::toResponseDto).toList();
     }
 
     public MatchResponseDto updateMatch(Long matchId, MatchUpdateDto request) {
@@ -183,6 +192,17 @@ public class MatchService {
 
     // ── helper ───────────────────────────────────────────────────────────────
 
+    /**
+     * Returns all matches involving the given user (as singles player or team member).
+     * Frontend uses this for "My Matches" — splits into upcoming vs past by status.
+     */
+    public List<MatchResponseDto> getMatchesForUser(Long userId) {
+        return matchRepository.findAllMatchesForUser(userId)
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
+    }
+
     private MatchResponseDto toResponseDto(Matches match) {
         MatchResponseDto dto = modelMapper.map(match, MatchResponseDto.class);
         dto.setTournamentId(match.getTournament().getId());
@@ -210,6 +230,13 @@ public class MatchService {
 
         dto.setTeamOneScore(match.getTeamOneScore());
         dto.setTeamTwoScore(match.getTeamTwoScore());
+        dto.setCategory(match.getCategory());
+
+        // Tournament name for "My Matches" display
+        if (match.getTournament() != null) {
+            dto.setTournamentName(match.getTournament().getTournamentName());
+            dto.setVenue(match.getTournament().getVenue());
+        }
 
         return dto;
     }

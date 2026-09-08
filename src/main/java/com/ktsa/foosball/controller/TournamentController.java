@@ -28,8 +28,9 @@ public class TournamentController {
     // ---------------------------------------------------------
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createTournament( @RequestPart("data") @Valid TournamentRequestDTO dto,
-                                                            @RequestPart(value = "banner", required = false) MultipartFile banner) {
-        return  tournamentService.createTournament(dto, banner);
+                                                            @RequestPart(value = "banner", required = false) MultipartFile banner,
+                                                            @RequestPart(value = "qrCode", required = false) MultipartFile qrCode) {
+        return  tournamentService.createTournament(dto, banner, qrCode);
     }
 
     // ---------------------------------------------------------
@@ -89,14 +90,13 @@ public class TournamentController {
     // ---------------------------------------------------------
     @PutMapping("/{tournamentId}")
     public ResponseEntity<ApiResponse<?>> updateTournament(  @PathVariable Long tournamentId,    @RequestPart("data") @Valid TournamentRequestDTO dto,
-                                                             @RequestPart(value = "banner", required = false) MultipartFile banner) {
+                                                             @RequestPart(value = "banner", required = false) MultipartFile banner,
+                                                             @RequestPart(value = "qrCode", required = false) MultipartFile qrCode) {
         return ResponseEntity.ok(
                         ApiResponse.success(
                                 200,
                                 "Tournament updated successfully",
-
-                tournamentService.updateTournament( tournamentId, dto, banner))
-
+                tournamentService.updateTournament( tournamentId, dto, banner, qrCode))
         );
     }
 

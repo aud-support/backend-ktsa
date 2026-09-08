@@ -81,6 +81,25 @@ public class ChallongeService {
                     "Tournament " + tournamentId + " has no challongeUrl configured.");
         }
 
+        return syncMatchesWithUrl(tournamentId, challongeUrl, null);
+    }
+
+    /**
+     * Sync using an explicit Challonge URL (from a per-category challongeUrl field).
+     * Optionally tags every created/updated match with the given category string.
+     */
+    public ChallongeSyncResultDto syncMatchesWithUrl(Long tournamentId, String challongeUrl, String category) {
+
+        Tournaments tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Tournament not found with id: " + tournamentId));
+
+        return doSync(tournament, challongeUrl, category);
+    }
+
+    private ChallongeSyncResultDto doSync(Tournaments tournament, String challongeUrl, String category) {
+        Long tournamentId = tournament.getId();
+
         // 1. Fetch raw participant names from Challonge
         Map<Long, String> participantNames = fetchParticipantNames(challongeUrl);
         log.info("[Challonge] Fetched {} participants for '{}'", participantNames.size(), challongeUrl);
@@ -132,6 +151,7 @@ public class ChallongeService {
                     match.setTeamTwo(team2);
                     match.setRoundNumber(cm.getRound());
                     match.setChallongeMatchId(cm.getId());
+                    if (category != null) match.setCategory(category);
                     applyTeamData(match, cm, team1, team2, participantTeams);
                     matchRepository.save(match);
 
@@ -174,6 +194,7 @@ public class ChallongeService {
                     match.setPlayerTwo(player2);
                     match.setRoundNumber(cm.getRound());
                     match.setChallongeMatchId(cm.getId());
+                    if (category != null) match.setCategory(category);
                     applyPlayerData(match, cm, participantUsers);
                     matchRepository.save(match);
 
