@@ -72,12 +72,27 @@ public class S3Service {
             ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(
                     GetObjectRequest.builder()
                             .bucket(bucket)
-                            .key(key)                        // e.g. "homepage/content.json"
+                            .key(key)
                             .build()
             );
             return objectMapper.readValue(s3Object, Map.class);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read JSON from S3", e);
+        }
+    }
+
+    // Read JSON from S3 and return as raw String — preserves full type info for nested objects
+    public String readJsonAsString(String bucket, String key) {
+        try {
+            ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(
+                    GetObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .build()
+            );
+            return new String(s3Object.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read JSON string from S3", e);
         }
     }
 
