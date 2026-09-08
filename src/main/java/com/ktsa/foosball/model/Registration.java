@@ -37,6 +37,8 @@ public class Registration {
 
     private String partnerPreference; // Defender, Attacker, All-rounder — set when player needs a partner
 
+    private String utrNumber; // UTR reference from payment
+
     @PrePersist
     public void prePersist() {
         this.registeredAt = LocalDateTime.now();

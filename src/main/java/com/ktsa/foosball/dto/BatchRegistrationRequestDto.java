@@ -25,6 +25,9 @@ public class BatchRegistrationRequestDto {
     /** Use an existing team by ID instead of creating a new one. */
     private Long existingTeamId;
 
+    /** UTR number submitted by the player after payment. */
+    private String utrNumber;
+
     /** List of category registrations the player wants to sign up for. */
     private List<CategoryEntry> categories;
 
