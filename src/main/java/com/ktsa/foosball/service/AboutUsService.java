@@ -22,22 +22,33 @@ public class AboutUsService {
 
     /**
      * Admin saves About Us content.
-     * If a new image is provided it is uploaded to S3 and its URL stored in the DTO.
-     * If no image is provided the existing whoWeAreImageUrl is preserved.
+     * Uploads team image and/or rulebook PDF to S3 if provided.
+     * Existing URLs are preserved when no new file is uploaded.
      */
-    public void saveAboutUsContent(AboutUsContentDto dto, MultipartFile image) {
+    public void saveAboutUsContent(AboutUsContentDto dto, MultipartFile image, MultipartFile rulebook) {
 
+        Map<String, Object> existing = getAboutUsContent();
+
+        // ── Team image ────────────────────────────────────────────────────────
         if (image != null && !image.isEmpty()) {
             String imageUrl = s3Service.uploadFile(image, bucket, "about-us");
             dto.setWhoWeAreImageUrl(imageUrl);
         } else {
-            // Preserve existing image URL if one was already saved
-            Map<String, Object> existing = getAboutUsContent();
             if (existing != null && existing.get("whoWeAreImageUrl") != null) {
                 String existingUrl = existing.get("whoWeAreImageUrl").toString();
-                if (!existingUrl.isBlank()) {
-                    dto.setWhoWeAreImageUrl(existingUrl);
-                }
+                if (!existingUrl.isBlank()) dto.setWhoWeAreImageUrl(existingUrl);
+            }
+        }
+
+        // ── Rulebook PDF ──────────────────────────────────────────────────────
+        if (rulebook != null && !rulebook.isEmpty()) {
+            String rulebookUrl = s3Service.uploadFile(rulebook, bucket, "about-us/rulebook");
+            dto.setRulebookUrl(rulebookUrl);
+        } else {
+            // Preserve existing URL if admin didn't upload a new file
+            if ((dto.getRulebookUrl() == null || dto.getRulebookUrl().isBlank())
+                    && existing != null && existing.get("rulebookUrl") != null) {
+                dto.setRulebookUrl(existing.get("rulebookUrl").toString());
             }
         }
 

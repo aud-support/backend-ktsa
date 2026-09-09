@@ -45,6 +45,34 @@ public class RankingService {
         return result;
     }
 
+    /**
+     * Returns the top 3 players/teams for the homepage spotlight:
+     *   slot 0 — #1 Men's Singles
+     *   slot 1 — #1 Women's Singles
+     *   slot 2 — #1 Open Doubles
+     * Only entries with at least 1 match played are included.
+     */
+    public List<RankingResponseDTO> getTopSpotlightPlayers() {
+        List<Matches> completed = matchRepository.findAllCompletedMatches();
+        List<RankingResponseDTO> spotlight = new ArrayList<>();
+
+        buildSinglesRankings(completed, MENS_SINGLES).stream()
+                .filter(r -> r.getMatches() > 0).findFirst().ifPresent(spotlight::add);
+        buildSinglesRankings(completed, WOMENS_SINGLES).stream()
+                .filter(r -> r.getMatches() > 0).findFirst().ifPresent(spotlight::add);
+        buildDoublesRankings(completed, OPEN_DOUBLES).stream()
+                .filter(r -> r.getMatches() > 0).findFirst().ifPresent(spotlight::add);
+
+        // Enrich singles entries with profile picture URL
+        spotlight.forEach(dto -> {
+            if (dto.getEmail() != null) {
+                userRepository.findByEmail(dto.getEmail())
+                        .ifPresent(u -> dto.setProfilePictureUrl(u.getProfilePictureUrl()));
+            }
+        });
+        return spotlight;
+    }
+
     public RankingResponseDTO getRankingByUserId(Long userId) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
@@ -160,6 +188,7 @@ public class RankingService {
                             .email(user.getEmail())
                             .gender(user.getGender())
                             .category(category)
+                            .profilePictureUrl(user.getProfilePictureUrl())
                             .build();
                 })
                 .sorted(Comparator.comparingInt(RankingResponseDTO::getPoints).reversed())

@@ -3,6 +3,7 @@ package com.ktsa.foosball.service;
 import com.ktsa.foosball.dto.MatchRequestDto;
 import com.ktsa.foosball.dto.MatchResponseDto;
 import com.ktsa.foosball.dto.MatchUpdateDto;
+import com.ktsa.foosball.dto.UserMatchResponseDto;
 import com.ktsa.foosball.exception.BadRequestException;
 import com.ktsa.foosball.model.Matches;
 import com.ktsa.foosball.model.Teams;
@@ -193,14 +194,68 @@ public class MatchService {
     // ── helper ───────────────────────────────────────────────────────────────
 
     /**
-     * Returns all matches involving the given user (as singles player or team member).
-     * Frontend uses this for "My Matches" — splits into upcoming vs past by status.
+     * Returns all matches for a user shaped for the profile "My Matches" view.
+     * Resolves opponent name, result (win/loss), score, and upcoming/past status.
      */
-    public List<MatchResponseDto> getMatchesForUser(Long userId) {
+    public List<UserMatchResponseDto> getMatchesForUser(Long userId) {
         return matchRepository.findAllMatchesForUser(userId)
                 .stream()
-                .map(this::toResponseDto)
+                .map(m -> toUserMatchDto(m, userId))
                 .toList();
+    }
+
+    private UserMatchResponseDto toUserMatchDto(Matches m, Long userId) {
+        UserMatchResponseDto dto = new UserMatchResponseDto();
+        dto.setId(m.getId());
+        dto.setScheduledAt(m.getScheduledAt());
+        dto.setCategory(m.getCategory());
+
+        if (m.getTournament() != null) {
+            dto.setTournamentId(m.getTournament().getId());
+            dto.setTournamentName(m.getTournament().getTournamentName());
+            dto.setLocation(m.getTournament().getVenue());
+        }
+
+        // "past" if COMPLETED, otherwise "upcoming"
+        String rawStatus = m.getStatus() != null ? m.getStatus().toUpperCase() : "";
+        dto.setStatus(rawStatus.equals("COMPLETED") || rawStatus.equals("DONE") ? "past" : "upcoming");
+
+        boolean isSingles = m.getPlayerOne() != null || m.getPlayerTwo() != null;
+
+        if (isSingles) {
+            boolean isPlayerOne = m.getPlayerOne() != null && userId.equals(m.getPlayerOne().getId());
+            dto.setOpponent(isPlayerOne
+                    ? (m.getPlayerTwo() != null ? m.getPlayerTwo().getName() : "TBD")
+                    : (m.getPlayerOne() != null ? m.getPlayerOne().getName() : "TBD"));
+
+            if ("past".equals(dto.getStatus())) {
+                Long myScore    = isPlayerOne ? m.getTeamOneScore() : m.getTeamTwoScore();
+                Long theirScore = isPlayerOne ? m.getTeamTwoScore() : m.getTeamOneScore();
+                if (myScore != null && theirScore != null) dto.setScore(myScore + "-" + theirScore);
+                if (m.getWinnerPlayer() != null)
+                    dto.setResult(userId.equals(m.getWinnerPlayer().getId()) ? "win" : "loss");
+            }
+        } else {
+            // Doubles
+            boolean isTeamOne = m.getTeamOne() != null && isUserInTeam(userId, m.getTeamOne());
+            Teams myTeam  = isTeamOne ? m.getTeamOne() : m.getTeamTwo();
+            Teams oppTeam = isTeamOne ? m.getTeamTwo() : m.getTeamOne();
+            dto.setOpponent(oppTeam != null ? oppTeam.getTeamName() : "TBD");
+
+            if ("past".equals(dto.getStatus())) {
+                Long myScore    = isTeamOne ? m.getTeamOneScore() : m.getTeamTwoScore();
+                Long theirScore = isTeamOne ? m.getTeamTwoScore() : m.getTeamOneScore();
+                if (myScore != null && theirScore != null) dto.setScore(myScore + "-" + theirScore);
+                if (m.getWinnerTeam() != null && myTeam != null)
+                    dto.setResult(myTeam.getTeamId().equals(m.getWinnerTeam().getTeamId()) ? "win" : "loss");
+            }
+        }
+        return dto;
+    }
+
+    private boolean isUserInTeam(Long userId, Teams team) {
+        return (team.getPlayerOne() != null && userId.equals(team.getPlayerOne().getId()))
+            || (team.getPlayerTwo() != null && userId.equals(team.getPlayerTwo().getId()));
     }
 
     private MatchResponseDto toResponseDto(Matches match) {

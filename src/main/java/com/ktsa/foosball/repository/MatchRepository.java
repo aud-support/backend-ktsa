@@ -35,15 +35,18 @@ public interface MatchRepository extends JpaRepository<Matches, Long> {
     /**
      * All matches where the given user is playerOne, playerTwo,
      * or a member of teamOne or teamTwo.
+     * Uses LEFT JOIN to safely handle singles matches (where teamOne/teamTwo are null).
      */
     @Query("""
         SELECT DISTINCT m FROM Matches m
+        LEFT JOIN m.teamOne t1
+        LEFT JOIN m.teamTwo t2
         WHERE m.playerOne.id = :userId
            OR m.playerTwo.id = :userId
-           OR m.teamOne.playerOne.id = :userId
-           OR m.teamOne.playerTwo.id = :userId
-           OR m.teamTwo.playerOne.id = :userId
-           OR m.teamTwo.playerTwo.id = :userId
+           OR t1.playerOne.id = :userId
+           OR t1.playerTwo.id = :userId
+           OR t2.playerOne.id = :userId
+           OR t2.playerTwo.id = :userId
         ORDER BY m.scheduledAt DESC NULLS LAST
         """)
     List<Matches> findAllMatchesForUser(@org.springframework.data.repository.query.Param("userId") Long userId);
