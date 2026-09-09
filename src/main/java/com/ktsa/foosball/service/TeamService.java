@@ -3,11 +3,15 @@ package com.ktsa.foosball.service;
 import com.ktsa.foosball.dto.ApiResponse;
 import com.ktsa.foosball.dto.TeamRequestDto;
 import com.ktsa.foosball.dto.TeamResponseDto;
+import com.ktsa.foosball.dto.UserTeamResponseDto;
 import com.ktsa.foosball.exception.BadRequestException;
 import com.ktsa.foosball.exception.ResourceNotFoundException;
 import com.ktsa.foosball.model.Teams;
+import com.ktsa.foosball.model.Tournaments;
 import com.ktsa.foosball.model.Users;
+import com.ktsa.foosball.repository.RegistrationRepository;
 import com.ktsa.foosball.repository.TeamsRepository;
+import com.ktsa.foosball.repository.TournamentRepository;
 import com.ktsa.foosball.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
 import java.lang.reflect.Type;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +32,8 @@ public class TeamService {
     private final ModelMapper modelMapper;
     private final TeamsRepository teamsRepository;
     private final UserRepository userRepository;
+    private final RegistrationRepository registrationRepository;
+    private final TournamentRepository tournamentRepository;
 
 
     public TeamResponseDto  createTeam(TeamRequestDto teamRequestDTO) {
@@ -154,5 +161,52 @@ public class TeamService {
         team.setPlayerOne(playerOne);
         team.setPlayerTwo(playerTwo);
         return teamsRepository.save(team);
+    }
+
+    /** Returns all teams a user is part of, with tournament registration info. */
+    public List<UserTeamResponseDto> getTeamsByUser(Long userId) {
+        return teamsRepository.findAllByUserId(userId).stream()
+                .map(team -> toUserTeamDto(team, userId))
+                .toList();
+    }
+
+    private UserTeamResponseDto toUserTeamDto(Teams team, Long userId) {
+        UserTeamResponseDto dto = new UserTeamResponseDto();
+        dto.setId(team.getTeamId());
+        dto.setTeamName(team.getTeamName());
+
+        boolean isPlayerOne = team.getPlayerOne() != null
+                && userId.equals(team.getPlayerOne().getId());
+        dto.setUserRole(isPlayerOne ? "playerOne" : "playerTwo");
+
+        Users partner = isPlayerOne ? team.getPlayerTwo() : team.getPlayerOne();
+        if (partner != null) {
+            UserTeamResponseDto.PartnerDto p = new UserTeamResponseDto.PartnerDto();
+            p.setId(partner.getId());
+            p.setName(partner.getName());
+            p.setEmail(partner.getEmail());
+            dto.setPartner(p);
+        }
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<UserTeamResponseDto.TeamTournamentDto> tournaments =
+                registrationRepository.findAllByTeamId(team.getTeamId()).stream()
+                        .map(r -> {
+                            UserTeamResponseDto.TeamTournamentDto t = new UserTeamResponseDto.TeamTournamentDto();
+                            t.setTournamentId(r.getTournamentId());
+                            t.setCategory(r.getCategory());
+                            Tournaments tournament = tournamentRepository.findById(r.getTournamentId()).orElse(null);
+                            if (tournament != null) {
+                                t.setTournamentName(tournament.getTournamentName());
+                                t.setStartDate(tournament.getStartDate() != null
+                                        ? tournament.getStartDate().format(fmt) : null);
+                                t.setStatus(tournament.getStatus() != null
+                                        ? tournament.getStatus().name() : "UPCOMING");
+                            }
+                            return t;
+                        })
+                        .toList();
+        dto.setTournaments(tournaments);
+        return dto;
     }
 }

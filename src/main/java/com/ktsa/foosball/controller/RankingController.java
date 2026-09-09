@@ -23,6 +23,18 @@ public class RankingController {
         return ResponseEntity.ok(rankingService.getAllRankings());
     }
 
+    /**
+     * GET /api/rankings/top
+     * Returns top 3 spotlight players for the homepage:
+     *   index 0 — #1 Men's Singles
+     *   index 1 — #1 Women's Singles
+     *   index 2 — #1 Open Doubles
+     */
+    @GetMapping("/top")
+    public ResponseEntity<List<RankingResponseDTO>> getTopSpotlightPlayers() {
+        return ResponseEntity.ok(rankingService.getTopSpotlightPlayers());
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<RankingResponseDTO> getRankingByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(rankingService.getRankingByUserId(userId));
