@@ -62,4 +62,15 @@ public class TeamController {
         );
     }
 
+    // ---------------------------------------------------------
+    // GET Teams by User ID
+    // GET /api/team/user/{userId}
+    // ---------------------------------------------------------
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<?>> getTeamsByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "User teams fetched successfully", teamService.getTeamsByUser(userId))
+        );
+    }
+
 }

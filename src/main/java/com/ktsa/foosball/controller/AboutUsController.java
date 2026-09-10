@@ -19,14 +19,15 @@ public class AboutUsController {
 
     /**
      * POST /api/about-us/content
-     * Admin updates About Us content (with optional team image upload).
+     * Admin updates About Us content (with optional team image and rulebook PDF uploads).
      */
     @PostMapping(value = "/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateContent(
             @RequestPart("data") AboutUsContentDto dto,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "rulebook", required = false) MultipartFile rulebook) {
 
-        aboutUsService.saveAboutUsContent(dto, image);
+        aboutUsService.saveAboutUsContent(dto, image, rulebook);
         return ResponseEntity.ok("About Us content updated successfully");
     }
 

@@ -115,4 +115,8 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
             @Param("playerId") Long playerId,
             @Param("excludeTeamId") Long excludeTeamId
     );
+
+    /** Finds all registrations for a specific team (across all tournaments). */
+    @Query("SELECT r FROM Registration r WHERE r.team.teamId = :teamId ORDER BY r.registeredAt ASC")
+    List<Registration> findAllByTeamId(@Param("teamId") Long teamId);
 }

@@ -60,14 +60,21 @@ public class HomepageService {
     /** Read all articles from S3; returns empty list if none saved yet. */
     public List<ArticleDto> getArticles() {
         try {
-            Map<String, Object> raw = s3Service.readJson(bucket, ARTICLES_KEY);
-            // The JSON is stored as {"articles": [...]}
-            Object list = raw.get("articles");
-            if (list == null) return new ArrayList<>();
-            String json = objectMapper.writeValueAsString(list);
-            return objectMapper.readValue(json, new TypeReference<List<ArticleDto>>() {});
-        } catch (NoSuchKeyException e) {
-            // File doesn't exist yet — first run
+            // Read raw JSON bytes from S3 and deserialize directly into typed list
+            // Avoids the Map → List double-hop that can lose inner class type info
+            String json = s3Service.readJsonAsString(bucket, ARTICLES_KEY);
+            if (json == null || json.isBlank()) return new ArrayList<>();
+
+            // JSON is stored as {"articles": [...]}
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+            com.fasterxml.jackson.databind.JsonNode articlesNode = root.get("articles");
+            if (articlesNode == null || articlesNode.isNull()) return new ArrayList<>();
+
+            return objectMapper.readValue(
+                    articlesNode.toString(),
+                    new TypeReference<List<ArticleDto>>() {}
+            );
+        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException e) {
             return new ArrayList<>();
         } catch (Exception e) {
             throw new RuntimeException("Failed to read articles from S3", e);
@@ -122,14 +129,18 @@ public class HomepageService {
     /** Read all services from S3; returns empty list if none saved yet. */
     public List<ServiceDto> getServices() {
         try {
-            Map<String, Object> raw = s3Service.readJson(bucket, SERVICES_KEY);
-            // The JSON is stored as {"services": [...]}
-            Object list = raw.get("services");
-            if (list == null) return new ArrayList<>();
-            String json = objectMapper.writeValueAsString(list);
-            return objectMapper.readValue(json, new TypeReference<List<ServiceDto>>() {});
-        } catch (NoSuchKeyException e) {
-            // File doesn't exist yet — first run
+            String json = s3Service.readJsonAsString(bucket, SERVICES_KEY);
+            if (json == null || json.isBlank()) return new ArrayList<>();
+
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+            com.fasterxml.jackson.databind.JsonNode servicesNode = root.get("services");
+            if (servicesNode == null || servicesNode.isNull()) return new ArrayList<>();
+
+            return objectMapper.readValue(
+                    servicesNode.toString(),
+                    new TypeReference<List<ServiceDto>>() {}
+            );
+        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException e) {
             return new ArrayList<>();
         } catch (Exception e) {
             throw new RuntimeException("Failed to read services from S3", e);

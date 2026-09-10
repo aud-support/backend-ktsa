@@ -1,6 +1,7 @@
 package com.ktsa.foosball.dto;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class ArticleDto {
@@ -13,4 +14,13 @@ public class ArticleDto {
     private String imageUrl;
     private String category;
     private boolean featured;
+
+    /** Named hyperlinks attached to the article. Each entry: {label, url} */
+    private List<ArticleLink> links;
+
+    @Data
+    public static class ArticleLink {
+        private String label;
+        private String url;
+    }
 }
