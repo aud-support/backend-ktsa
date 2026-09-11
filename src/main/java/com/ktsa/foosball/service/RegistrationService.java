@@ -390,14 +390,20 @@ public class RegistrationService {
     // ---------------------------------------------------------------
 
     /**
-     * Validates every requested category without saving anything.
-     * If ALL pass, saves all registrations in one go.
-     * If ANY fails, throws BadRequestException with a combined message — nothing is saved.
+     * Shared resolution of players / teams from the DTO.
+     * Throws immediately if any required entity is missing or inconsistent.
      */
-    @org.springframework.transaction.annotation.Transactional
-    public String validateAndRegisterAll(BatchRegistrationRequestDto dto, Long tournamentId) {
+    private static class ResolvedContext {
+        Tournaments tournament;
+        Users playerOne;
+        Users playerTwo;       // null if no WITH_PARTNER category
+        Teams existingTeam;    // null if no EXISTING_TEAM category
+    }
 
-        Tournaments tournament = tournamentRepository.findById(tournamentId)
+    private ResolvedContext resolveContext(BatchRegistrationRequestDto dto, Long tournamentId) {
+        ResolvedContext ctx = new ResolvedContext();
+
+        ctx.tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new NotFoundException(
                         "Tournament not found. The tournament you are trying to register for does not exist or may have been removed."));
 
@@ -405,14 +411,11 @@ public class RegistrationService {
             throw new BadRequestException("Please select at least one category to register for.");
         }
 
-        // Resolve main player once
-        Users playerOne = userRepository.findByEmail(dto.getPlayerOneEmail())
+        ctx.playerOne = userRepository.findByEmail(dto.getPlayerOneEmail())
                 .orElseThrow(() -> new NotFoundException(
                         "No player account found for the email \"" + dto.getPlayerOneEmail() + "\". "
                         + "Please make sure you are using the email address linked to your KTSA account."));
 
-        // Resolve partner once (if any doubles category uses WITH_PARTNER)
-        Users playerTwo = null;
         boolean needsPartner = dto.getCategories().stream()
                 .anyMatch(c -> "WITH_PARTNER".equalsIgnoreCase(c.getDoublesMode()));
         if (needsPartner) {
@@ -426,14 +429,12 @@ public class RegistrationService {
                         "You cannot register with yourself as a partner. "
                         + "Please provide your actual partner's email address.");
             }
-            playerTwo = userRepository.findByEmail(dto.getPlayerTwoEmail())
+            ctx.playerTwo = userRepository.findByEmail(dto.getPlayerTwoEmail())
                     .orElseThrow(() -> new NotFoundException(
                             "No player account found for the partner email \"" + dto.getPlayerTwoEmail() + "\". "
                             + "Your partner must have a registered KTSA account before you can register together."));
         }
 
-        // Resolve existing team once (if any doubles category uses EXISTING_TEAM)
-        Teams existingTeam = null;
         boolean usesExistingTeam = dto.getCategories().stream()
                 .anyMatch(c -> "EXISTING_TEAM".equalsIgnoreCase(c.getDoublesMode()));
         if (usesExistingTeam) {
@@ -441,27 +442,33 @@ public class RegistrationService {
                 throw new BadRequestException(
                         "No team was selected. Please choose an existing team from your saved teams to proceed.");
             }
-            existingTeam = teamService.getTeamById(dto.getExistingTeamId());
+            ctx.existingTeam = teamService.getTeamById(dto.getExistingTeamId());
         }
 
-        // ── PHASE 1: Validate every category — collect ALL errors, save NOTHING ──
+        return ctx;
+    }
+
+    /**
+     * Runs Phase 1 validation across all categories — collects every error,
+     * then throws a combined BadRequestException if any category fails.
+     * Does NOT save anything.
+     */
+    private void runPhaseOneValidation(BatchRegistrationRequestDto dto,
+                                       ResolvedContext ctx,
+                                       Long tournamentId) {
         java.util.List<String> errors = new java.util.ArrayList<>();
 
         for (BatchRegistrationRequestDto.CategoryEntry entry : dto.getCategories()) {
-            String cat = entry.getCategory();
+            String cat  = entry.getCategory();
             String mode = entry.getDoublesMode();
 
             try {
                 if (isDoubleCategory(cat)) {
                     if ("WITH_PARTNER".equalsIgnoreCase(mode)) {
-
-                        // New validation
-                        validatePlayerAlreadyRegisteredInDoubles(tournamentId, playerOne);
-                        validatePlayerAlreadyRegisteredInDoubles(tournamentId, playerTwo);
-                        // Gender check for doubles
-                        validateDoubleGender(playerOne, playerTwo, cat);
-                        // Duplicate team check
-                        Teams tentativeTeam = teamService.getTeamByPlayers(playerOne.getId(), playerTwo.getId());
+                        validatePlayerAlreadyRegisteredInDoubles(tournamentId, ctx.playerOne);
+                        validatePlayerAlreadyRegisteredInDoubles(tournamentId, ctx.playerTwo);
+                        validateDoubleGender(ctx.playerOne, ctx.playerTwo, cat);
+                        Teams tentativeTeam = teamService.getTeamByPlayers(ctx.playerOne.getId(), ctx.playerTwo.getId());
                         if (tentativeTeam != null) {
                             boolean dup = !registrationRepository
                                     .findAllByTournamentIdAndTeam(tournamentId, tentativeTeam)
@@ -476,24 +483,18 @@ public class RegistrationService {
                             }
                         }
                     } else if ("EXISTING_TEAM".equalsIgnoreCase(mode)) {
-                        validateNotAlreadyInAnotherDoublesTeam(
-                                tournamentId,
-                                existingTeam.getPlayerOne(),
-                                existingTeam.getTeamId());
-                        validateNotAlreadyInAnotherDoublesTeam(
-                                tournamentId,
-                                existingTeam.getPlayerTwo(),
-                                existingTeam.getTeamId());
-                        validateDoubleGender(existingTeam.getPlayerOne(), existingTeam.getPlayerTwo(), cat);
+                        validateNotAlreadyInAnotherDoublesTeam(tournamentId, ctx.existingTeam.getPlayerOne(), ctx.existingTeam.getTeamId());
+                        validateNotAlreadyInAnotherDoublesTeam(tournamentId, ctx.existingTeam.getPlayerTwo(), ctx.existingTeam.getTeamId());
+                        validateDoubleGender(ctx.existingTeam.getPlayerOne(), ctx.existingTeam.getPlayerTwo(), cat);
                         boolean dupTeam = !registrationRepository
-                                .findAllByTournamentIdAndTeam(tournamentId, existingTeam)
+                                .findAllByTournamentIdAndTeam(tournamentId, ctx.existingTeam)
                                 .isEmpty();
                         if (dupTeam) {
                             String existingCat = registrationRepository
-                                    .findAllByTournamentIdAndTeam(tournamentId, existingTeam)
+                                    .findAllByTournamentIdAndTeam(tournamentId, ctx.existingTeam)
                                     .get(0).getCategory();
                             throw new BadRequestException(
-                                    "Your team \"" + existingTeam.getTeamName() + "\" is already registered for \""
+                                    "Your team \"" + ctx.existingTeam.getTeamName() + "\" is already registered for \""
                                     + existingCat + "\" in this tournament. A team can only enter one doubles category per tournament.");
                         }
                     } else if ("NEED_PARTNER".equalsIgnoreCase(mode)) {
@@ -509,9 +510,9 @@ public class RegistrationService {
                     }
                 } else {
                     // Singles
-                    validateSingleGender(playerOne, cat);
+                    validateSingleGender(ctx.playerOne, cat);
                     boolean dupSingle = !registrationRepository
-                            .findAllByTournamentIdAndPlayerAndCategory(tournamentId, playerOne, cat)
+                            .findAllByTournamentIdAndPlayerAndCategory(tournamentId, ctx.playerOne, cat)
                             .isEmpty();
                     if (dupSingle) {
                         throw new BadRequestException(
@@ -521,11 +522,11 @@ public class RegistrationService {
                 }
 
                 // Capacity check (applies to all)
-                if (tournament.getMaxParticipants() != null) {
+                if (ctx.tournament.getMaxParticipants() != null) {
                     long registered = registrationRepository.countByTournamentId(tournamentId);
-                    if (registered >= tournament.getMaxParticipants()) {
+                    if (registered >= ctx.tournament.getMaxParticipants()) {
                         throw new BadRequestException(
-                                "This tournament has reached its maximum capacity of " + tournament.getMaxParticipants()
+                                "This tournament has reached its maximum capacity of " + ctx.tournament.getMaxParticipants()
                                 + " participants and is no longer accepting new registrations.");
                     }
                 }
@@ -535,19 +536,39 @@ public class RegistrationService {
             }
         }
 
-        // If any category failed validation → return all errors, save nothing
         if (!errors.isEmpty()) {
             throw new BadRequestException(String.join(" | ", errors));
         }
+    }
+
+    /**
+     * Validate-only: runs all checks but saves nothing.
+     * Called by the frontend before showing the payment step.
+     */
+    public void validateOnly(BatchRegistrationRequestDto dto, Long tournamentId) {
+        ResolvedContext ctx = resolveContext(dto, tournamentId);
+        runPhaseOneValidation(dto, ctx, tournamentId);
+    }
+
+    /**
+     * Validates every requested category without saving anything.
+     * If ALL pass, saves all registrations in one go.
+     * If ANY fails, throws BadRequestException with a combined message — nothing is saved.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public String validateAndRegisterAll(BatchRegistrationRequestDto dto, Long tournamentId) {
+
+        ResolvedContext ctx = resolveContext(dto, tournamentId);
+        runPhaseOneValidation(dto, ctx, tournamentId);
 
         // ── PHASE 2: All validations passed — save everything ──
         for (BatchRegistrationRequestDto.CategoryEntry entry : dto.getCategories()) {
-            String cat = entry.getCategory();
+            String cat  = entry.getCategory();
             String mode = entry.getDoublesMode();
 
             if (isDoubleCategory(cat)) {
                 if ("WITH_PARTNER".equalsIgnoreCase(mode)) {
-                    Teams team = teamService.findOrCreateTeam(playerOne, playerTwo, dto.getTeamName());
+                    Teams team = teamService.findOrCreateTeam(ctx.playerOne, ctx.playerTwo, dto.getTeamName());
                     Registration reg = new Registration();
                     reg.setTeam(team);
                     reg.setTournamentId(tournamentId);
@@ -558,7 +579,7 @@ public class RegistrationService {
 
                 } else if ("EXISTING_TEAM".equalsIgnoreCase(mode)) {
                     Registration reg = new Registration();
-                    reg.setTeam(existingTeam);
+                    reg.setTeam(ctx.existingTeam);
                     reg.setTournamentId(tournamentId);
                     reg.setCategory(cat);
                     reg.setStatus("REGISTERED");
@@ -567,7 +588,7 @@ public class RegistrationService {
 
                 } else if ("NEED_PARTNER".equalsIgnoreCase(mode)) {
                     Registration reg = new Registration();
-                    reg.setPlayer(playerOne);
+                    reg.setPlayer(ctx.playerOne);
                     reg.setTournamentId(tournamentId);
                     reg.setCategory(cat);
                     reg.setPartnerPreference(dto.getPartnerPreference());
@@ -577,7 +598,7 @@ public class RegistrationService {
                 }
             } else {
                 Registration reg = new Registration();
-                reg.setPlayer(playerOne);
+                reg.setPlayer(ctx.playerOne);
                 reg.setTournamentId(tournamentId);
                 reg.setCategory(cat);
                 reg.setStatus("REGISTERED");

@@ -33,6 +33,22 @@ public class RegistrationController {
         );
     }
 
+    /**
+     * Validate-only endpoint — runs all the same checks as batch registration
+     * but saves nothing. Used by the frontend before showing the payment step.
+     *
+     * POST /api/registration/validate/{tournamentId}
+     */
+    @PostMapping("/validate/{tournamentId}")
+    public ResponseEntity<ApiResponse<?>> validateBatch(
+            @RequestBody BatchRegistrationRequestDto dto,
+            @PathVariable Long tournamentId) {
+        registrationService.validateOnly(dto, tournamentId);
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "All checks passed. You may proceed to payment.", null)
+        );
+    }
+
     // ── Individual endpoints kept for backward compatibility ──
 
     @PostMapping("/single/{tournamentId}")
