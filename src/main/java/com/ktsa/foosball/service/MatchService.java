@@ -177,15 +177,22 @@ public class MatchService {
         if (request.getTeamTwoScore() != null) {
             match.setTeamTwoScore(request.getTeamTwoScore());
         }
-        if (request.getWinnerTeam() != null) {
-            Teams winner = teamsRepository.findById(request.getWinnerTeam())
-                    .orElseThrow(() -> new RuntimeException("Winner team not found"));
-            match.setWinnerTeam(winner);
-        }
-        if (request.getWinnerPlayer() != null) {
-            Users winner = userRepository.findById(request.getWinnerPlayer())
-                    .orElseThrow(() -> new RuntimeException("Winner player not found"));
-            match.setWinnerPlayer(winner);
+
+        // clearWinner takes priority — wipes out any existing winner
+        if (Boolean.TRUE.equals(request.getClearWinner())) {
+            match.setWinnerTeam(null);
+            match.setWinnerPlayer(null);
+        } else {
+            if (request.getWinnerTeam() != null) {
+                Teams winner = teamsRepository.findById(request.getWinnerTeam())
+                        .orElseThrow(() -> new RuntimeException("Winner team not found"));
+                match.setWinnerTeam(winner);
+            }
+            if (request.getWinnerPlayer() != null) {
+                Users winner = userRepository.findById(request.getWinnerPlayer())
+                        .orElseThrow(() -> new RuntimeException("Winner player not found"));
+                match.setWinnerPlayer(winner);
+            }
         }
 
         return toResponseDto(matchRepository.save(match));

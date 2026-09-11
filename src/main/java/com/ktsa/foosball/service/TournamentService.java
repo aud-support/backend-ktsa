@@ -6,7 +6,9 @@ import com.ktsa.foosball.dto.TournamentResponseDTO;
 import com.ktsa.foosball.exception.ResourceNotFoundException;
 import com.ktsa.foosball.model.Media;
 import com.ktsa.foosball.model.Tournaments;
+import com.ktsa.foosball.repository.MatchRepository;
 import com.ktsa.foosball.repository.MediaRepository;
+import com.ktsa.foosball.repository.RegistrationRepository;
 import com.ktsa.foosball.repository.TournamentRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -31,6 +33,8 @@ public class TournamentService {
     private final ModelMapper modelMapper;
     private final S3Service s3Service;
     private final MediaRepository mediaRepository;
+    private final MatchRepository matchRepository;
+    private final RegistrationRepository registrationRepository;
 
     @Value("${aws.s3.buckets.tournaments}")
     private String tournamentsBucket;
@@ -208,12 +212,24 @@ public class TournamentService {
         return response;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteTournament(Long tournamentId) {
 
-        Tournaments tournament = tournamentRepository.findById(tournamentId).orElseThrow(() -> new ResourceNotFoundException("Tournament not found with id: " + tournamentId));
+        Tournaments tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Tournament not found with id: " + tournamentId));
 
+        // 1. Delete matches first (they reference the tournament and possibly players/teams)
+        matchRepository.deleteAllByTournamentId(tournamentId);
+
+        // 2. Delete registrations (they reference the tournament)
+        registrationRepository.deleteAllByTournamentId(tournamentId);
+
+        // 3. Delete media (banner, qrcode) linked to this tournament
+        mediaRepository.deleteAll(mediaRepository.findAllByTournamentId(tournamentId));
+
+        // 4. Now safe to delete the tournament itself
         tournamentRepository.delete(tournament);
-
     }
 
     /** Manually open or close registrations for a tournament. */

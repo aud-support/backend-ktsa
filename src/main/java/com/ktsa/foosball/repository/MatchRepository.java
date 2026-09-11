@@ -28,6 +28,8 @@ public interface MatchRepository extends JpaRepository<Matches, Long> {
 
     java.util.Optional<Matches> findByTournamentIdAndChallongeMatchId(Long tournamentId, Long challongeMatchId);
 
+    void deleteAllByTournamentId(Long tournamentId);
+
     /** All completed matches (singles and doubles) */
     @Query("SELECT m FROM Matches m WHERE m.status = 'COMPLETED'")
     List<Matches> findAllCompletedMatches();
