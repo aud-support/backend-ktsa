@@ -26,8 +26,13 @@ public class RankingResponseDTO {
      */
     private String category;
 
-    /** Only set for doubles entries — the team identifier */
+    /**
+     * Only set for doubles entries — the team identifier
+     */
     private Long teamId;
 
-    /** Profile picture URL — set for spotlight / top-player display */
+    /**
+     * Profile picture URL — set for spotlight / top-player display
+     */
     private String profilePictureUrl;
+}
