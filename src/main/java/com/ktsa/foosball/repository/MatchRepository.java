@@ -26,12 +26,22 @@ public interface MatchRepository extends JpaRepository<Matches, Long> {
 
     List<Matches> findByTournamentIdAndCategory(Long tournamentId, String category);
 
+    /**
+     * Case-insensitive category match — use this when querying with the
+     * canonical key (e.g. "MENS_SINGLES") so it also finds legacy rows
+     * stored as "Men's Singles" that haven't been migrated yet.
+     */
+    @Query("SELECT m FROM Matches m WHERE m.tournament.id = :tournamentId AND UPPER(m.category) = UPPER(:category)")
+    List<Matches> findByTournamentIdAndCategoryIgnoreCase(
+            @org.springframework.data.repository.query.Param("tournamentId") Long tournamentId,
+            @org.springframework.data.repository.query.Param("category") String category);
+
     java.util.Optional<Matches> findByTournamentIdAndChallongeMatchId(Long tournamentId, Long challongeMatchId);
 
     void deleteAllByTournamentId(Long tournamentId);
 
     /** All completed matches (singles and doubles) */
-    @Query("SELECT m FROM Matches m WHERE m.status = 'COMPLETED'")
+    @Query("SELECT m FROM Matches m WHERE UPPER(m.status) = 'COMPLETED'")
     List<Matches> findAllCompletedMatches();
 
     /**

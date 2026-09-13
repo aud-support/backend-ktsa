@@ -117,6 +117,34 @@ public class RankingService {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // CATEGORY NORMALISATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Normalises any stored category string to a canonical ranking key.
+     * Handles values like "Men's Singles", "Open Singles", "MENS_SINGLES", etc.
+     */
+    static String normalizeCategory(String category) {
+        if (category == null) return null;
+        String key = category.trim()
+                .toUpperCase()
+                .replace("'", "")
+                .replace("\u2019", "")  // right single quotation mark
+                .replace(" ", "_")
+                .replace("-", "_");
+        return switch (key) {
+            case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
+                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+            case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
+                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
+            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
+                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+            default -> key;
+        };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // SINGLES
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -141,7 +169,7 @@ public class RankingService {
 
             // prefer explicit category; fall back to gender inference
             if (m.getCategory() != null) {
-                if (!category.equals(m.getCategory())) continue;
+                if (!category.equals(normalizeCategory(m.getCategory()))) continue;
             } else {
                 if (m.getPlayerOne().getGender() != targetGender
                         || m.getPlayerTwo().getGender() != targetGender) continue;
@@ -216,7 +244,7 @@ public class RankingService {
             if (!isDoublesMatch(m)) continue;
 
             if (m.getCategory() != null) {
-                if (!category.equals(m.getCategory())) continue;
+                if (!category.equals(normalizeCategory(m.getCategory()))) continue;
             } else {
                 if (!matchesDoublesCategory(m, category)) continue;
             }

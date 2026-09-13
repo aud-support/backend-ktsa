@@ -91,4 +91,17 @@ public class MatchController {
                         challongeService.syncMatchesWithUrl(tournamentId, challongeUrl, category)));
     }
 
+    /**
+     * POST /api/matches/admin/normalize-categories
+     * One-time admin utility: re-normalises all category strings already in the
+     * database so the ranking service can match them correctly.
+     * Safe to call multiple times — already-normalised values are left unchanged.
+     */
+    @PostMapping("/admin/normalize-categories")
+    public ResponseEntity<ApiResponse<?>> normalizeCategories() {
+        int updated = matchService.normalizeAllCategories();
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Normalised " + updated + " match categories", updated));
+    }
+
 }

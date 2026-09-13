@@ -151,7 +151,7 @@ public class ChallongeService {
                     match.setTeamTwo(team2);
                     match.setRoundNumber(cm.getRound());
                     match.setChallongeMatchId(cm.getId());
-                    if (category != null) match.setCategory(category);
+                    if (category != null) match.setCategory(normalizeCategory(category));
                     applyTeamData(match, cm, team1, team2, participantTeams);
                     matchRepository.save(match);
 
@@ -194,7 +194,7 @@ public class ChallongeService {
                     match.setPlayerTwo(player2);
                     match.setRoundNumber(cm.getRound());
                     match.setChallongeMatchId(cm.getId());
-                    if (category != null) match.setCategory(category);
+                    if (category != null) match.setCategory(normalizeCategory(category));
                     applyPlayerData(match, cm, participantUsers);
                     matchRepository.save(match);
 
@@ -412,6 +412,35 @@ public class ChallongeService {
                           || (m.getTeamOne().getTeamId().equals(t2.getTeamId()) &&
                               m.getTeamTwo().getTeamId().equals(t1.getTeamId())))
                 .findFirst();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CATEGORY NORMALISATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Normalises the category string to one of the canonical ranking keys so that
+     * RankingService can match them:
+     *   MENS_SINGLES | WOMENS_SINGLES | OPEN_DOUBLES | MIXED_DOUBLES
+     */
+    private String normalizeCategory(String category) {
+        if (category == null) return null;
+        String key = category.trim()
+                .toUpperCase()
+                .replace("'", "")
+                .replace("\u2019", "") // right single quotation mark
+                .replace(" ", "_")
+                .replace("-", "_");
+        return switch (key) {
+            case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
+                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+            case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
+                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
+            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
+                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+            default -> key;
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
