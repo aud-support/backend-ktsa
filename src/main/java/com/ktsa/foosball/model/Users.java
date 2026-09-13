@@ -2,7 +2,6 @@ package com.ktsa.foosball.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.Data;
 import lombok.Getter;
@@ -46,7 +45,6 @@ public class Users {
     @Enumerated(EnumType.STRING)
     private Gender gender;//male,female,other
 
-    @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 

@@ -1,24 +1,30 @@
 package com.ktsa.foosball.service;
 
+import com.ktsa.foosball.dto.BulkImportResultDto;
 import com.ktsa.foosball.dto.ChangePasswordDTO;
 import com.ktsa.foosball.dto.MyprofileUpdateDTO;
 import com.ktsa.foosball.dto.UserResponseDTO;
 import com.ktsa.foosball.exception.ResourceNotFoundException;
 import com.ktsa.foosball.mapper.UserMapper;
+import com.ktsa.foosball.model.Gender;
 import com.ktsa.foosball.model.Ranking;
+import com.ktsa.foosball.model.Role;
+import com.ktsa.foosball.model.UserStatus;
 import com.ktsa.foosball.model.Users;
 import com.ktsa.foosball.repository.RankingRepository;
 import com.ktsa.foosball.repository.UserRepository;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import  com.ktsa.foosball.dto.UserRequestDTO;
+import com.ktsa.foosball.dto.UserRequestDTO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -147,5 +153,97 @@ return "password changed successfully";
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * Bulk import users from an Excel (.xlsx) file.
+     *
+     * Expected columns (row 1 = header, skipped):
+     *   A: name (required)
+     *   B: email (required)
+     *   C: gender (optional — MALE / FEMALE)
+     *
+     * Default password: Ktsa@1234
+     * Rows with duplicate email or missing name/email are skipped.
+     */
+    public BulkImportResultDto bulkImportUsers(MultipartFile file) {
+        final String DEFAULT_PASSWORD = "Ktsa@1234";
+
+        int totalRows = 0;
+        int created = 0;
+        List<String> skippedEmails = new ArrayList<>();
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // skip header row 0
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String name  = getCellValue(row, 0);
+                String email = getCellValue(row, 1);
+                String genderStr = getCellValue(row, 2);
+
+                // skip empty rows
+                if (name.isBlank() && email.isBlank()) continue;
+
+                totalRows++;
+
+                if (name.isBlank() || email.isBlank()) {
+                    skippedEmails.add(email.isBlank() ? "row-" + (i + 1) + "-missing-email" : email);
+                    continue;
+                }
+
+                // skip duplicate emails
+                if (userRepository.existsByEmail(email)) {
+                    skippedEmails.add(email);
+                    continue;
+                }
+
+                // build user
+                Users user = new Users();
+                user.setName(name.trim());
+                user.setEmail(email.trim().toLowerCase());
+                user.setPassword(encoder.encode(DEFAULT_PASSWORD));
+                user.setRole(Role.PLAYER);
+                user.setStatus(UserStatus.ACTIVE);
+                user.setCreatedAt(LocalDateTime.now());
+                user.setTokenVersion(1);
+
+                // optional gender
+                if (!genderStr.isBlank()) {
+                    try {
+                        user.setGender(Gender.valueOf(genderStr.trim().toUpperCase()));
+                    } catch (IllegalArgumentException ignored) {
+                        // unrecognised value — leave null
+                    }
+                }
+
+                Users saved = userRepository.save(user);
+                saved.setUserName(userMapper.generateUserName(saved.getName(), saved.getId()));
+                userRepository.save(saved);
+
+                // create ranking entry
+                Ranking ranking = Ranking.builder()
+                        .points(0).wins(0).losses(0).user(saved).build();
+                rankingRepository.save(ranking);
+
+                created++;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to parse Excel file: " + e.getMessage(), e);
+        }
+
+        return new BulkImportResultDto(totalRows, created, skippedEmails.size(), skippedEmails);
+    }
+
+    private String getCellValue(Row row, int colIndex) {
+        Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+        if (cell == null) return "";
+        return switch (cell.getCellType()) {
+            case STRING  -> cell.getStringCellValue().trim();
+            case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
+            default      -> "";
+        };
     }
 }
