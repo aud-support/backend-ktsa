@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final UserRepository userRepository;
+
+    @Value("${admin.email}")
+    private String adminEmail;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil,
                                    CustomUserDetailsService userDetailsService,
@@ -61,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
             // ADMIN
-            if (identifier.equals("admin@gmail.com") || identifier.equals("EMP0001")) {
+            if (identifier.equalsIgnoreCase(adminEmail)) {
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
