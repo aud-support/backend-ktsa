@@ -117,5 +117,17 @@ public class UserController {
                         userService.searchByName(q)));
     }
 
-
+    // ---------------------------------------------------------
+    // BULK IMPORT USERS from Excel
+    // POST /api/users/bulk-import  (multipart: file = .xlsx)
+    // Columns: A=name, B=email, C=gender (optional)
+    // Default password: Ktsa@1234
+    // ---------------------------------------------------------
+    @PostMapping("/bulk-import")
+    public ResponseEntity<ApiResponse<?>> bulkImportUsers(
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Bulk import completed",
+                        userService.bulkImportUsers(file)));
+    }
 }
