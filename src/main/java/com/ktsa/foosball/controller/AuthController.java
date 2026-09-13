@@ -11,6 +11,7 @@ import com.ktsa.foosball.repository.UserRepository;
 import com.ktsa.foosball.security.JwtUtil;
 import com.ktsa.foosball.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +26,11 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
-    private static final String ADMIN_EMAIL = "admin@gmail.com";
-    private static final String ADMIN_PASSWORD = "admin123";
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> login(@RequestBody UserDTO request) {
@@ -35,8 +39,8 @@ public class AuthController {
         String password = request.getPassword();
 
         // ADMIN LOGIN
-        if (identifier.equalsIgnoreCase(ADMIN_EMAIL) && password.equals(ADMIN_PASSWORD)) {
-            String adminToken = jwtUtil.generateToken(ADMIN_EMAIL, com.ktsa.foosball.model.Role.ADMIN, 0);
+        if (identifier.equalsIgnoreCase(adminEmail) && password.equals(adminPassword)) {
+            String adminToken = jwtUtil.generateToken(adminEmail, com.ktsa.foosball.model.Role.ADMIN, 0);
             return ResponseEntity.ok(
                     ApiResponse.success(200, "Login successful", Map.of(
                             "token", adminToken,

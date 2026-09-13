@@ -135,11 +135,11 @@ public class MatchService {
         }
 
         match.setStage(request.getStage());
-        match.setStatus(request.getStatus());
+        match.setStatus(normalizeStatus(request.getStatus()));
         match.setScheduledAt(request.getScheduledAt());
         match.setRoundNumber(request.getRoundNumber());
         if (request.getCategory() != null) {
-            match.setCategory(request.getCategory());
+            match.setCategory(normalizeCategory(request.getCategory()));
         }
 
         Matches saved = matchRepository.save(match);
@@ -157,7 +157,7 @@ public class MatchService {
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
         List<Matches> matches = (category != null && !category.isBlank())
-                ? matchRepository.findByTournamentIdAndCategory(tournamentId, category)
+                ? matchRepository.findByTournamentIdAndCategoryIgnoreCase(tournamentId, normalizeCategory(category))
                 : matchRepository.findByTournamentId(tournamentId);
 
         return matches.stream().map(this::toResponseDto).toList();
@@ -169,7 +169,7 @@ public class MatchService {
                 .orElseThrow(() -> new RuntimeException("Match not found: " + matchId));
 
         if (request.getStatus() != null) {
-            match.setStatus(request.getStatus());
+            match.setStatus(normalizeStatus(request.getStatus()));
         }
         if (request.getTeamOneScore() != null) {
             match.setTeamOneScore(request.getTeamOneScore());
@@ -301,5 +301,64 @@ public class MatchService {
         }
 
         return dto;
+    }
+
+    /**
+     * Re-normalises the `category` field on every match in the database so that
+     * ranking queries can match them against the canonical enum strings.
+     * Returns the number of rows actually updated.
+     */
+    public int normalizeAllCategories() {
+        List<com.ktsa.foosball.model.Matches> all = matchRepository.findAll();
+        int count = 0;
+        for (com.ktsa.foosball.model.Matches m : all) {
+            if (m.getCategory() == null) continue;
+            String normalized = normalizeCategory(m.getCategory());
+            if (!normalized.equals(m.getCategory())) {
+                m.setCategory(normalized);
+                matchRepository.save(m);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Normalises match status so values like "complete", "DONE", "done"
+     * are stored consistently as "COMPLETED".
+     */
+    private String normalizeStatus(String status) {
+        if (status == null) return null;
+        return switch (status.trim().toUpperCase()) {
+            case "COMPLETE", "COMPLETED", "DONE", "FINISHED" -> "COMPLETED";
+            case "IN_PROGRESS", "INPROGRESS", "OPEN", "STARTED" -> "IN_PROGRESS";
+            default -> status.trim().toUpperCase();
+        };
+    }
+
+    /**
+     * Normalises match category to one of the canonical ranking keys:
+     * MENS_SINGLES, WOMENS_SINGLES, OPEN_DOUBLES, MIXED_DOUBLES.
+     * Falls back to the uppercased raw value if no alias matches.
+     */
+    private String normalizeCategory(String category) {
+        if (category == null) return null;
+        // strip apostrophes/quotes, replace spaces and dashes with underscore, uppercase
+        String key = category.trim()
+                .toUpperCase()
+                .replace("'", "")
+                .replace("'", "")   // right single quotation mark U+2019
+                .replace(" ", "_")
+                .replace("-", "_");
+        return switch (key) {
+            case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
+                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+            case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
+                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
+            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
+                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+            default -> key;
+        };
     }
 }
