@@ -25,9 +25,20 @@ public class AboutUsService {
      * Uploads team image and/or rulebook PDF to S3 if provided.
      * Existing URLs are preserved when no new file is uploaded.
      */
-    public void saveAboutUsContent(AboutUsContentDto dto, MultipartFile image, MultipartFile rulebook) {
+    public void saveAboutUsContent(AboutUsContentDto dto, MultipartFile bannerImage, MultipartFile image, MultipartFile rulebook) {
 
         Map<String, Object> existing = getAboutUsContent();
+
+        // ── Hero banner image ─────────────────────────────────────────────────
+        if (bannerImage != null && !bannerImage.isEmpty()) {
+            String imageUrl = s3Service.uploadFile(bannerImage, bucket, "about-us/banner");
+            dto.setHeroBannerUrl(imageUrl);
+        } else {
+            if (existing != null && existing.get("heroBannerUrl") != null) {
+                String existingUrl = existing.get("heroBannerUrl").toString();
+                if (!existingUrl.isBlank()) dto.setHeroBannerUrl(existingUrl);
+            }
+        }
 
         // ── Team image ────────────────────────────────────────────────────────
         if (image != null && !image.isEmpty()) {

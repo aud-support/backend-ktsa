@@ -25,9 +25,10 @@ public class AboutUsController {
     public ResponseEntity<String> updateContent(
             @RequestPart("data") AboutUsContentDto dto,
             @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "bannerImage", required = false) MultipartFile bannerImage,
             @RequestPart(value = "rulebook", required = false) MultipartFile rulebook) {
 
-        aboutUsService.saveAboutUsContent(dto, image, rulebook);
+        aboutUsService.saveAboutUsContent(dto, bannerImage, image, rulebook);
         return ResponseEntity.ok("About Us content updated successfully");
     }
 
