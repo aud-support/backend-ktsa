@@ -23,6 +23,11 @@ public class AboutUsContentDto {
     private String founderQuote;
     private String founderStory;
 
+    // Hero Banner
+    private String heroBannerUrl;
+    private String heroTitle;
+    private String heroSubtitle;
+
     // Who We Are
     private String whoWeAreContent;
     private String whoWeAreImageUrl;
