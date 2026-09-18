@@ -48,7 +48,8 @@ public class Matches {
     private Long challongeMatchId;
 
     /**
-     * Match category — one of: MENS_SINGLES, WOMENS_SINGLES, OPEN_DOUBLES, MIXED_DOUBLES.
+     * Match category — one of: MENS_SINGLES, WOMENS_SINGLES, OPEN_SINGLES,
+     * UNDER_16, ABOVE_16, OPEN_DOUBLES, MIXED_DOUBLES.
      * Set explicitly when a match is created so rankings filter by category directly
      * instead of inferring from player/team gender.
      */

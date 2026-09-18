@@ -420,8 +420,7 @@ public class ChallongeService {
 
     /**
      * Normalises the category string to one of the canonical ranking keys so that
-     * RankingService can match them:
-     *   MENS_SINGLES | WOMENS_SINGLES | OPEN_DOUBLES | MIXED_DOUBLES
+     * RankingService can match them. MUST stay in sync with MatchService.normalizeCategory().
      */
     private String normalizeCategory(String category) {
         if (category == null) return null;
@@ -433,12 +432,17 @@ public class ChallongeService {
                 .replace("-", "_");
         return switch (key) {
             case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
-                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+                 "MALE_SINGLES"                                -> "MENS_SINGLES";
             case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
-                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
+                 "FEMALE_SINGLES"                             -> "WOMENS_SINGLES";
+            case "OPEN_SINGLES",   "OPEN_SINGLE"              -> "OPEN_SINGLES";
+            case "UNDER_16",  "UNDER16", "U16", "U_16",
+                 "UNDER_SIXTEEN", "UNDERSIXTEEN"              -> "UNDER_16";
+            case "ABOVE_16",  "ABOVE16", "A16", "A_16",
+                 "ABOVE_SIXTEEN", "ABOVESIXTEEN"              -> "ABOVE_16";
             case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
-                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
-            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+                 "MALE_DOUBLES"                               -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED"                   -> "MIXED_DOUBLES";
             default -> key;
         };
     }
