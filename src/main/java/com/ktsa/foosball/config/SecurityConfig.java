@@ -86,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/footer/**").permitAll()
                         .requestMatchers("/api/sponsors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/page-banners/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
                         .anyRequest().authenticated()
                 );
 
