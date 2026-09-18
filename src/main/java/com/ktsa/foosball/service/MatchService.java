@@ -278,10 +278,18 @@ public class MatchService {
         if (match.getTeamOne() != null) {
             dto.setTeamOneName(match.getTeamOne().getTeamName());
             dto.setTeamOneChallongeName(match.getTeamOne().getChallongeTeamName());
+            // Build human display name from actual player names
+            String p1 = match.getTeamOne().getPlayerOne() != null ? match.getTeamOne().getPlayerOne().getName() : "?";
+            String p2 = match.getTeamOne().getPlayerTwo() != null ? match.getTeamOne().getPlayerTwo().getName() : "?";
+            dto.setTeamOneDisplayName(p1 + " & " + p2);
         }
         if (match.getTeamTwo() != null) {
             dto.setTeamTwoName(match.getTeamTwo().getTeamName());
             dto.setTeamTwoChallongeName(match.getTeamTwo().getChallongeTeamName());
+            // Build human display name from actual player names
+            String p1 = match.getTeamTwo().getPlayerOne() != null ? match.getTeamTwo().getPlayerOne().getName() : "?";
+            String p2 = match.getTeamTwo().getPlayerTwo() != null ? match.getTeamTwo().getPlayerTwo().getName() : "?";
+            dto.setTeamTwoDisplayName(p1 + " & " + p2);
         }
         if (match.getWinnerTeam() != null) {
             dto.setWinnerTeam(match.getWinnerTeam().getTeamName());
