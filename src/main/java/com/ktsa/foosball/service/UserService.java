@@ -89,6 +89,9 @@ public class UserService {
         user.setPhoneNumber(dto.getPhoneNumber());
         user.setState(dto.getState());
         user.setCity(dto.getCity());
+        if (dto.getDateOfBirth() != null) {
+            user.setDateOfBirth(dto.getDateOfBirth());
+        }
         user.setUpdatedAt(LocalDateTime.now());
 
         return userMapper.toDTO(userRepository.save(user));
