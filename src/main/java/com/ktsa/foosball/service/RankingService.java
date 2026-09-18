@@ -232,15 +232,16 @@ public class RankingService {
             }
         }
 
-        // For gendered categories also seed from the ranking registry
+        // Only include players who actually played matches in this specific category.
+        // For gender-restricted categories (MENS_SINGLES, WOMENS_SINGLES), also enforce
+        // the gender filter on seenUsers — guards against legacy data where Open Singles
+        // matches may have been incorrectly stored under a gendered category key.
         Map<Long, Users> registry = new LinkedHashMap<>();
-        if (finalTargetGender != null) {
-            rankingRepository.findAll().stream()
-                    .filter(r -> r.getUser() != null)
-                    .filter(r -> r.getUser().getGender() == finalTargetGender)
-                    .forEach(r -> registry.put(r.getUser().getId(), r.getUser()));
+        for (Map.Entry<Long, Users> entry : seenUsers.entrySet()) {
+            Users u = entry.getValue();
+            if (finalTargetGender != null && u.getGender() != finalTargetGender) continue;
+            registry.put(entry.getKey(), u);
         }
-        seenUsers.forEach(registry::putIfAbsent);
 
         return registry.values().stream()
                 .map(user -> {
