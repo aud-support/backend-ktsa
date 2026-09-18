@@ -75,4 +75,37 @@ public class AuthController {
                 ))
         );
     }
+
+    /**
+     * POST /api/auth/reset-password
+     * Simple password reset — no email/token required.
+     * Verifies the email exists and updates the password directly.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<?>> resetPassword(
+            @RequestBody Map<String, String> body) {
+
+        String email       = body.get("email");
+        String newPassword = body.get("newPassword");
+
+        if (email == null || email.isBlank() || newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, "Email and new password are required.", null));
+        }
+        if (newPassword.length() < 8) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, "Password must be at least 8 characters.", null));
+        }
+
+        Users user = userRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with that email address."));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        // Invalidate all existing sessions
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Password updated successfully.", null));
+    }
 }
