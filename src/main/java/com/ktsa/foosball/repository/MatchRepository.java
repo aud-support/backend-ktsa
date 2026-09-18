@@ -45,6 +45,20 @@ public interface MatchRepository extends JpaRepository<Matches, Long> {
     List<Matches> findAllCompletedMatches();
 
     /**
+     * Finds all singles matches stored as MENS_SINGLES that have at least one
+     * female player — these were incorrectly categorised due to the old
+     * normalizeCategory bug that mapped "Open Singles" → "MENS_SINGLES".
+     */
+    @Query("""
+        SELECT m FROM Matches m
+        WHERE m.category = 'MENS_SINGLES'
+          AND m.playerOne IS NOT NULL
+          AND m.teamOne IS NULL
+          AND (m.playerOne.gender = 'FEMALE' OR m.playerTwo.gender = 'FEMALE')
+        """)
+    List<Matches> findMensSinglesWithFemalePlayer();
+
+    /**
      * All matches where the given user is playerOne, playerTwo,
      * or a member of teamOne or teamTwo.
      * Uses LEFT JOIN to safely handle singles matches (where teamOne/teamTwo are null).
