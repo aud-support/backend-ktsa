@@ -379,12 +379,30 @@ public class MatchService {
                  "FEMALE_SINGLES"                             -> "WOMENS_SINGLES";
             case "OPEN_SINGLES",   "OPEN_SINGLE"              -> "OPEN_SINGLES";
             case "UNDER_16",  "UNDER16", "U16", "U_16",
-                 "UNDER_SIXTEEN", "UNDERSIXTEEN"              -> "UNDER_16";
+                 "UNDER_SIXTEEN", "UNDERSIXTEEN",
+                 "JUNIOR_U16_SINGLES", "JUNIOR_U16_SINGLE"   -> "UNDER_16";
             case "ABOVE_16",  "ABOVE16", "A16", "A_16",
                  "ABOVE_SIXTEEN", "ABOVESIXTEEN"              -> "ABOVE_16";
-            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
-                 "MALE_DOUBLES"                               -> "OPEN_DOUBLES";
-            case "MIXED_DOUBLES",  "MIXED"                   -> "MIXED_DOUBLES";
+            case "OPEN_DOUBLES",   "OPEN_DOUBLE"              -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED",
+                 "MIXED_DOUBLE"                               -> "MIXED_DOUBLES";
+            case "BEGINNER_DOUBLES", "BEGINNER_DOUBLE",
+                 "BEGINNER"                                   -> "BEGINNER_DOUBLES";
+            case "WOMENS_DOUBLES", "WOMEN_DOUBLES",
+                 "WOMENS_DOUBLE", "WOMEN_DOUBLE"              -> "WOMENS_DOUBLES";
+            case "MENS_DOUBLES", "MEN_DOUBLES",
+                 "MENS_DOUBLE", "MEN_DOUBLE"                  -> "MENS_DOUBLES";
+            case "JUNIOR_U16_DOUBLES", "JUNIOR_U16_DOUBLE"    -> "JUNIOR_U16_DOUBLES";
+            case "JUNIOR_ABOVE16_SINGLES", "JUNIOR_ABOVE16_SINGLE",
+                 "JUNIOR_ABOVE_16_SINGLES"                    -> "JUNIOR_ABOVE16_SINGLES";
+            case "JUNIOR_ABOVE16_DOUBLES", "JUNIOR_ABOVE16_DOUBLE",
+                 "JUNIOR_ABOVE_16_DOUBLES"                    -> "JUNIOR_ABOVE16_DOUBLES";
+            case "SENIOR_DOUBLES", "SENIOR_DOUBLE"            -> "SENIOR_DOUBLES";
+            case "DISABLED_SINGLES", "DISABLED_SINGLE"        -> "DISABLED_SINGLES";
+            case "DISABLED_DOUBLES", "DISABLED_DOUBLE"        -> "DISABLED_DOUBLES";
+            case "DISABLED_MIXED"                             -> "DISABLED_MIXED";
+            case "MONSTER_DYP", "MONSTER"                    -> "MONSTER_DYP";
+            case "TEAM_EVENT", "TEAM"                         -> "TEAM_EVENT";
             default -> key;
         };
     }

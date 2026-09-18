@@ -71,6 +71,55 @@ public class Tournaments {
     private Double aboveSixteenFee;
     private String aboveSixteenChallongeUrl;
 
+    // ── New categories ─────────────────────────────────────────────────────
+    private Boolean beginnerDoubleEnabled;
+    private Double beginnerDoubleFee;
+    private String beginnerDoubleChallongeUrl;
+
+    private Boolean womensDoubleEnabled;
+    private Double womensDoubleFee;
+    private String womensDoubleChallongeUrl;
+
+    private Boolean mensDoubleEnabled;
+    private Double mensDoubleFee;
+    private String mensDoubleChallongeUrl;
+
+    private Boolean juniorU16DoubleEnabled;
+    private Double juniorU16DoubleFee;
+    private String juniorU16DoubleChallongeUrl;
+
+    private Boolean juniorAbove16SingleEnabled;
+    private Double juniorAbove16SingleFee;
+    private String juniorAbove16SingleChallongeUrl;
+
+    private Boolean juniorAbove16DoubleEnabled;
+    private Double juniorAbove16DoubleFee;
+    private String juniorAbove16DoubleChallongeUrl;
+
+    private Boolean seniorDoubleEnabled;
+    private Double seniorDoubleFee;
+    private String seniorDoubleChallongeUrl;
+
+    private Boolean disabledSingleEnabled;
+    private Double disabledSingleFee;
+    private String disabledSingleChallongeUrl;
+
+    private Boolean disabledDoubleEnabled;
+    private Double disabledDoubleFee;
+    private String disabledDoubleChallongeUrl;
+
+    private Boolean disabledMixedEnabled;
+    private Double disabledMixedFee;
+    private String disabledMixedChallongeUrl;
+
+    private Boolean monsterDypEnabled;
+    private Double monsterDypFee;
+    private String monsterDypChallongeUrl;
+
+    private Boolean teamEventEnabled;
+    private Double teamEventFee;
+    private String teamEventChallongeUrl;
+
     private Boolean registrationClosed;
 
     /** Challonge tournament URL slug — used to sync bracket data */
