@@ -26,6 +26,10 @@ public class MatchResponseDto {
     private String teamOneChallongeName;
     private String teamTwoChallongeName;
 
+    /** Human display names: "Player1 Name & Player2 Name" — built from user.name */
+    private String teamOneDisplayName;
+    private String teamTwoDisplayName;
+
     private Long teamOneScore;
     private Long teamTwoScore;
     private String winnerTeam;
@@ -47,6 +51,8 @@ public class MatchResponseDto {
     public void setPlayerTwoName(String name) { this.playerTwo = name; }
     public void setTeamOneName(String name)   { this.teamOne = name; }
     public void setTeamTwoName(String name)   { this.teamTwo = name; }
+    public void setTeamOneDisplayName(String name) { this.teamOneDisplayName = name; }
+    public void setTeamTwoDisplayName(String name) { this.teamTwoDisplayName = name; }
 }
 
 
