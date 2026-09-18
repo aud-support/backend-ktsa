@@ -15,13 +15,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class RankingService {
 
     public static final String MENS_SINGLES   = "MENS_SINGLES";
     public static final String WOMENS_SINGLES = "WOMENS_SINGLES";
+    public static final String OPEN_SINGLES   = "OPEN_SINGLES";
+    public static final String UNDER_16       = "UNDER_16";
+    public static final String ABOVE_16       = "ABOVE_16";
     public static final String OPEN_DOUBLES   = "OPEN_DOUBLES";
     public static final String MIXED_DOUBLES  = "MIXED_DOUBLES";
 
@@ -40,9 +42,28 @@ public class RankingService {
         List<RankingResponseDTO> result = new ArrayList<>();
         result.addAll(buildSinglesRankings(completed, MENS_SINGLES));
         result.addAll(buildSinglesRankings(completed, WOMENS_SINGLES));
+        result.addAll(buildSinglesRankings(completed, OPEN_SINGLES));
+        result.addAll(buildSinglesRankings(completed, UNDER_16));
+        result.addAll(buildSinglesRankings(completed, ABOVE_16));
         result.addAll(buildDoublesRankings(completed, OPEN_DOUBLES));
         result.addAll(buildDoublesRankings(completed, MIXED_DOUBLES));
         return result;
+    }
+
+    /**
+     * Returns the list of all ranking categories with display labels.
+     * Used by the frontend to build dynamic category tabs.
+     */
+    public List<Map<String, String>> getRankingCategories() {
+        List<Map<String, String>> cats = new ArrayList<>();
+        cats.add(Map.of("key", MENS_SINGLES,   "label", "Men's Singles"));
+        cats.add(Map.of("key", WOMENS_SINGLES, "label", "Women's Singles"));
+        cats.add(Map.of("key", OPEN_SINGLES,   "label", "Open Singles"));
+        cats.add(Map.of("key", UNDER_16,       "label", "Under 16"));
+        cats.add(Map.of("key", ABOVE_16,       "label", "Above 16"));
+        cats.add(Map.of("key", OPEN_DOUBLES,   "label", "Open Doubles"));
+        cats.add(Map.of("key", MIXED_DOUBLES,  "label", "Mixed Doubles"));
+        return cats;
     }
 
     /**
@@ -134,12 +155,17 @@ public class RankingService {
                 .replace("-", "_");
         return switch (key) {
             case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
-                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+                 "MALE_SINGLES"                                -> "MENS_SINGLES";
             case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
-                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
+                 "FEMALE_SINGLES"                             -> "WOMENS_SINGLES";
+            case "OPEN_SINGLES",   "OPEN_SINGLE"              -> "OPEN_SINGLES";
+            case "UNDER_16",  "UNDER16", "U16", "U_16",
+                 "UNDER_SIXTEEN", "UNDERSIXTEEN"              -> "UNDER_16";
+            case "ABOVE_16",  "ABOVE16", "A16", "A_16",
+                 "ABOVE_SIXTEEN", "ABOVESIXTEEN"              -> "ABOVE_16";
             case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
-                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
-            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+                 "MALE_DOUBLES"                               -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED"                   -> "MIXED_DOUBLES";
             default -> key;
         };
     }
@@ -153,12 +179,16 @@ public class RankingService {
      *          completed match in every tournament.
      *
      * Category filter: explicit match.category first, then gender inference
-     * for backwards compatibility with older matches.
+     * for backwards compatibility with older matches (only for MENS/WOMENS).
      */
     private List<RankingResponseDTO> buildSinglesRankings(
             List<Matches> completedMatches, String category) {
 
-        Gender targetGender = category.equals(MENS_SINGLES) ? Gender.MALE : Gender.FEMALE;
+        // Gender-based fallback only applies to gendered singles categories
+        Gender targetGender = null;
+        if (category.equals(MENS_SINGLES))   targetGender = Gender.MALE;
+        if (category.equals(WOMENS_SINGLES)) targetGender = Gender.FEMALE;
+        final Gender finalTargetGender = targetGender;
 
         // userId -> [wins, losses, totalPoints]
         Map<Long, int[]> statsMap = new HashMap<>();
@@ -167,12 +197,17 @@ public class RankingService {
         for (Matches m : completedMatches) {
             if (!isSinglesMatch(m)) continue;
 
-            // prefer explicit category; fall back to gender inference
+            // prefer explicit category; fall back to gender inference for legacy MENS/WOMENS only
             if (m.getCategory() != null) {
                 if (!category.equals(normalizeCategory(m.getCategory()))) continue;
             } else {
-                if (m.getPlayerOne().getGender() != targetGender
-                        || m.getPlayerTwo().getGender() != targetGender) continue;
+                if (finalTargetGender != null) {
+                    if (m.getPlayerOne().getGender() != finalTargetGender
+                            || m.getPlayerTwo().getGender() != finalTargetGender) continue;
+                } else {
+                    // OPEN_SINGLES / UNDER_16 / ABOVE_16 — skip matches without explicit category
+                    continue;
+                }
             }
 
             Users p1 = m.getPlayerOne();
@@ -197,11 +232,14 @@ public class RankingService {
             }
         }
 
+        // For gendered categories also seed from the ranking registry
         Map<Long, Users> registry = new LinkedHashMap<>();
-        rankingRepository.findAll().stream()
-                .filter(r -> r.getUser() != null)
-                .filter(r -> r.getUser().getGender() == targetGender)
-                .forEach(r -> registry.put(r.getUser().getId(), r.getUser()));
+        if (finalTargetGender != null) {
+            rankingRepository.findAll().stream()
+                    .filter(r -> r.getUser() != null)
+                    .filter(r -> r.getUser().getGender() == finalTargetGender)
+                    .forEach(r -> registry.put(r.getUser().getId(), r.getUser()));
+        }
         seenUsers.forEach(registry::putIfAbsent);
 
         return registry.values().stream()

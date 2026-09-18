@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rankings")
@@ -21,6 +22,15 @@ public class RankingController {
     @GetMapping
     public ResponseEntity<List<RankingResponseDTO>> getAllRankings() {
         return ResponseEntity.ok(rankingService.getAllRankings());
+    }
+
+    /**
+     * GET /api/rankings/categories
+     * Returns all available ranking category keys and labels for the frontend.
+     */
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, String>>> getRankingCategories() {
+        return ResponseEntity.ok(rankingService.getRankingCategories());
     }
 
     /**
