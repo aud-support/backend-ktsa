@@ -74,8 +74,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()                        .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/tournament/**").permitAll()
                         .requestMatchers("/api/registration/**").permitAll()
                         .requestMatchers("/api/homepage/**").permitAll()
@@ -86,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/footer/**").permitAll()
                         .requestMatchers("/api/sponsors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/page-banners/**").permitAll()
+                        .requestMatchers("/api/gallery", "/api/gallery/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
                         .anyRequest().authenticated()
                 );

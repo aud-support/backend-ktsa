@@ -19,13 +19,25 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RankingService {
 
-    public static final String MENS_SINGLES   = "MENS_SINGLES";
-    public static final String WOMENS_SINGLES = "WOMENS_SINGLES";
-    public static final String OPEN_SINGLES   = "OPEN_SINGLES";
-    public static final String UNDER_16       = "UNDER_16";
-    public static final String ABOVE_16       = "ABOVE_16";
-    public static final String OPEN_DOUBLES   = "OPEN_DOUBLES";
-    public static final String MIXED_DOUBLES  = "MIXED_DOUBLES";
+    public static final String MENS_SINGLES          = "MENS_SINGLES";
+    public static final String WOMENS_SINGLES        = "WOMENS_SINGLES";
+    public static final String OPEN_SINGLES          = "OPEN_SINGLES";
+    public static final String UNDER_16              = "UNDER_16";
+    public static final String ABOVE_16              = "ABOVE_16";
+    public static final String OPEN_DOUBLES          = "OPEN_DOUBLES";
+    public static final String MIXED_DOUBLES         = "MIXED_DOUBLES";
+    public static final String BEGINNER_DOUBLES      = "BEGINNER_DOUBLES";
+    public static final String WOMENS_DOUBLES        = "WOMENS_DOUBLES";
+    public static final String MENS_DOUBLES          = "MENS_DOUBLES";
+    public static final String JUNIOR_U16_DOUBLES    = "JUNIOR_U16_DOUBLES";
+    public static final String JUNIOR_ABOVE16_SINGLES = "JUNIOR_ABOVE16_SINGLES";
+    public static final String JUNIOR_ABOVE16_DOUBLES = "JUNIOR_ABOVE16_DOUBLES";
+    public static final String SENIOR_DOUBLES        = "SENIOR_DOUBLES";
+    public static final String DISABLED_SINGLES      = "DISABLED_SINGLES";
+    public static final String DISABLED_DOUBLES      = "DISABLED_DOUBLES";
+    public static final String DISABLED_MIXED        = "DISABLED_MIXED";
+    public static final String MONSTER_DYP           = "MONSTER_DYP";
+    public static final String TEAM_EVENT            = "TEAM_EVENT";
 
     private final RankingRepository rankingRepository;
     private final MatchRepository   matchRepository;
@@ -45,8 +57,20 @@ public class RankingService {
         result.addAll(buildSinglesRankings(completed, OPEN_SINGLES));
         result.addAll(buildSinglesRankings(completed, UNDER_16));
         result.addAll(buildSinglesRankings(completed, ABOVE_16));
+        result.addAll(buildSinglesRankings(completed, JUNIOR_ABOVE16_SINGLES));
+        result.addAll(buildSinglesRankings(completed, DISABLED_SINGLES));
         result.addAll(buildDoublesRankings(completed, OPEN_DOUBLES));
         result.addAll(buildDoublesRankings(completed, MIXED_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, BEGINNER_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, WOMENS_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, MENS_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, JUNIOR_U16_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, JUNIOR_ABOVE16_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, SENIOR_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, DISABLED_DOUBLES));
+        result.addAll(buildDoublesRankings(completed, DISABLED_MIXED));
+        result.addAll(buildDoublesRankings(completed, MONSTER_DYP));
+        result.addAll(buildDoublesRankings(completed, TEAM_EVENT));
         return result;
     }
 
@@ -56,13 +80,25 @@ public class RankingService {
      */
     public List<Map<String, String>> getRankingCategories() {
         List<Map<String, String>> cats = new ArrayList<>();
-        cats.add(Map.of("key", MENS_SINGLES,   "label", "Men's Singles"));
-        cats.add(Map.of("key", WOMENS_SINGLES, "label", "Women's Singles"));
-        cats.add(Map.of("key", OPEN_SINGLES,   "label", "Open Singles"));
-        cats.add(Map.of("key", UNDER_16,       "label", "Under 16"));
-        cats.add(Map.of("key", ABOVE_16,       "label", "Above 16"));
-        cats.add(Map.of("key", OPEN_DOUBLES,   "label", "Open Doubles"));
-        cats.add(Map.of("key", MIXED_DOUBLES,  "label", "Mixed Doubles"));
+        cats.add(Map.of("key", MENS_SINGLES,            "label", "Men's Singles"));
+        cats.add(Map.of("key", WOMENS_SINGLES,          "label", "Women's Singles"));
+        cats.add(Map.of("key", OPEN_SINGLES,            "label", "Open Singles"));
+        cats.add(Map.of("key", UNDER_16,                "label", "Junior U16 Singles"));
+        cats.add(Map.of("key", ABOVE_16,                "label", "Junior Above 16 Singles"));
+        cats.add(Map.of("key", JUNIOR_ABOVE16_SINGLES,  "label", "Junior Above 16 Singles"));
+        cats.add(Map.of("key", DISABLED_SINGLES,        "label", "Disabled Singles"));
+        cats.add(Map.of("key", OPEN_DOUBLES,            "label", "Open Doubles"));
+        cats.add(Map.of("key", MIXED_DOUBLES,           "label", "Mixed Doubles"));
+        cats.add(Map.of("key", BEGINNER_DOUBLES,        "label", "Beginner Doubles"));
+        cats.add(Map.of("key", WOMENS_DOUBLES,          "label", "Women's Doubles"));
+        cats.add(Map.of("key", MENS_DOUBLES,            "label", "Men's Doubles"));
+        cats.add(Map.of("key", JUNIOR_U16_DOUBLES,      "label", "Junior U16 Doubles"));
+        cats.add(Map.of("key", JUNIOR_ABOVE16_DOUBLES,  "label", "Junior Above 16 Doubles"));
+        cats.add(Map.of("key", SENIOR_DOUBLES,          "label", "Senior Doubles"));
+        cats.add(Map.of("key", DISABLED_DOUBLES,        "label", "Disabled Doubles"));
+        cats.add(Map.of("key", DISABLED_MIXED,          "label", "Disabled Mixed"));
+        cats.add(Map.of("key", MONSTER_DYP,             "label", "Monster - DYP"));
+        cats.add(Map.of("key", TEAM_EVENT,              "label", "Team Event"));
         return cats;
     }
 
@@ -160,12 +196,30 @@ public class RankingService {
                  "FEMALE_SINGLES"                             -> "WOMENS_SINGLES";
             case "OPEN_SINGLES",   "OPEN_SINGLE"              -> "OPEN_SINGLES";
             case "UNDER_16",  "UNDER16", "U16", "U_16",
-                 "UNDER_SIXTEEN", "UNDERSIXTEEN"              -> "UNDER_16";
+                 "UNDER_SIXTEEN", "UNDERSIXTEEN",
+                 "JUNIOR_U16_SINGLES", "JUNIOR_U16_SINGLE"   -> "UNDER_16";
             case "ABOVE_16",  "ABOVE16", "A16", "A_16",
                  "ABOVE_SIXTEEN", "ABOVESIXTEEN"              -> "ABOVE_16";
-            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
-                 "MALE_DOUBLES"                               -> "OPEN_DOUBLES";
-            case "MIXED_DOUBLES",  "MIXED"                   -> "MIXED_DOUBLES";
+            case "OPEN_DOUBLES",   "OPEN_DOUBLE"              -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED",
+                 "MIXED_DOUBLE"                               -> "MIXED_DOUBLES";
+            case "BEGINNER_DOUBLES", "BEGINNER_DOUBLE",
+                 "BEGINNER"                                   -> "BEGINNER_DOUBLES";
+            case "WOMENS_DOUBLES", "WOMEN_DOUBLES",
+                 "WOMENS_DOUBLE", "WOMEN_DOUBLE"              -> "WOMENS_DOUBLES";
+            case "MENS_DOUBLES", "MEN_DOUBLES",
+                 "MENS_DOUBLE", "MEN_DOUBLE"                  -> "MENS_DOUBLES";
+            case "JUNIOR_U16_DOUBLES", "JUNIOR_U16_DOUBLE"    -> "JUNIOR_U16_DOUBLES";
+            case "JUNIOR_ABOVE16_SINGLES", "JUNIOR_ABOVE16_SINGLE",
+                 "JUNIOR_ABOVE_16_SINGLES"                    -> "JUNIOR_ABOVE16_SINGLES";
+            case "JUNIOR_ABOVE16_DOUBLES", "JUNIOR_ABOVE16_DOUBLE",
+                 "JUNIOR_ABOVE_16_DOUBLES"                    -> "JUNIOR_ABOVE16_DOUBLES";
+            case "SENIOR_DOUBLES", "SENIOR_DOUBLE"            -> "SENIOR_DOUBLES";
+            case "DISABLED_SINGLES", "DISABLED_SINGLE"        -> "DISABLED_SINGLES";
+            case "DISABLED_DOUBLES", "DISABLED_DOUBLE"        -> "DISABLED_DOUBLES";
+            case "DISABLED_MIXED"                             -> "DISABLED_MIXED";
+            case "MONSTER_DYP", "MONSTER"                    -> "MONSTER_DYP";
+            case "TEAM_EVENT", "TEAM"                         -> "TEAM_EVENT";
             default -> key;
         };
     }
@@ -232,15 +286,16 @@ public class RankingService {
             }
         }
 
-        // For gendered categories also seed from the ranking registry
+        // Only include players who actually played matches in this specific category.
+        // For gender-restricted categories (MENS_SINGLES, WOMENS_SINGLES), also enforce
+        // the gender filter on seenUsers — guards against legacy data where Open Singles
+        // matches may have been incorrectly stored under a gendered category key.
         Map<Long, Users> registry = new LinkedHashMap<>();
-        if (finalTargetGender != null) {
-            rankingRepository.findAll().stream()
-                    .filter(r -> r.getUser() != null)
-                    .filter(r -> r.getUser().getGender() == finalTargetGender)
-                    .forEach(r -> registry.put(r.getUser().getId(), r.getUser()));
+        for (Map.Entry<Long, Users> entry : seenUsers.entrySet()) {
+            Users u = entry.getValue();
+            if (finalTargetGender != null && u.getGender() != finalTargetGender) continue;
+            registry.put(entry.getKey(), u);
         }
-        seenUsers.forEach(registry::putIfAbsent);
 
         return registry.values().stream()
                 .map(user -> {

@@ -104,4 +104,17 @@ public class MatchController {
                 ApiResponse.success(200, "Normalised " + updated + " match categories", updated));
     }
 
+    /**
+     * POST /api/matches/admin/fix-open-singles
+     * One-time fix: corrects matches stored as MENS_SINGLES that actually have
+     * a female player (i.e. they were Open Singles misclassified by the old normalizeCategory).
+     * Safe to call multiple times — only updates matches that still need fixing.
+     */
+    @PostMapping("/admin/fix-open-singles")
+    public ResponseEntity<ApiResponse<?>> fixOpenSingles() {
+        int fixed = matchService.fixOpenSinglesMiscategorized();
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "Fixed " + fixed + " Open Singles matches", fixed));
+    }
+
 }

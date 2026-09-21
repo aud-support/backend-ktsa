@@ -278,10 +278,18 @@ public class MatchService {
         if (match.getTeamOne() != null) {
             dto.setTeamOneName(match.getTeamOne().getTeamName());
             dto.setTeamOneChallongeName(match.getTeamOne().getChallongeTeamName());
+            // Build human display name from actual player names
+            String p1 = match.getTeamOne().getPlayerOne() != null ? match.getTeamOne().getPlayerOne().getName() : "?";
+            String p2 = match.getTeamOne().getPlayerTwo() != null ? match.getTeamOne().getPlayerTwo().getName() : "?";
+            dto.setTeamOneDisplayName(p1 + " & " + p2);
         }
         if (match.getTeamTwo() != null) {
             dto.setTeamTwoName(match.getTeamTwo().getTeamName());
             dto.setTeamTwoChallongeName(match.getTeamTwo().getChallongeTeamName());
+            // Build human display name from actual player names
+            String p1 = match.getTeamTwo().getPlayerOne() != null ? match.getTeamTwo().getPlayerOne().getName() : "?";
+            String p2 = match.getTeamTwo().getPlayerTwo() != null ? match.getTeamTwo().getPlayerTwo().getName() : "?";
+            dto.setTeamTwoDisplayName(p1 + " & " + p2);
         }
         if (match.getWinnerTeam() != null) {
             dto.setWinnerTeam(match.getWinnerTeam().getTeamName());
@@ -324,6 +332,21 @@ public class MatchService {
     }
 
     /**
+     * Fixes matches that were incorrectly stored as MENS_SINGLES when they
+     * should be OPEN_SINGLES — identifiable because they have a female player.
+     * This happened because the old normalizeCategory mapped "Open Singles" → "MENS_SINGLES".
+     * Returns the number of rows corrected.
+     */
+    public int fixOpenSinglesMiscategorized() {
+        List<com.ktsa.foosball.model.Matches> bad = matchRepository.findMensSinglesWithFemalePlayer();
+        for (com.ktsa.foosball.model.Matches m : bad) {
+            m.setCategory("OPEN_SINGLES");
+            matchRepository.save(m);
+        }
+        return bad.size();
+    }
+
+    /**
      * Normalises match status so values like "complete", "DONE", "done"
      * are stored consistently as "COMPLETED".
      */
@@ -337,27 +360,49 @@ public class MatchService {
     }
 
     /**
-     * Normalises match category to one of the canonical ranking keys:
-     * MENS_SINGLES, WOMENS_SINGLES, OPEN_DOUBLES, MIXED_DOUBLES.
+     * Normalises match category to one of the canonical ranking keys.
      * Falls back to the uppercased raw value if no alias matches.
+     * MUST stay in sync with RankingService.normalizeCategory().
      */
     private String normalizeCategory(String category) {
         if (category == null) return null;
-        // strip apostrophes/quotes, replace spaces and dashes with underscore, uppercase
         String key = category.trim()
                 .toUpperCase()
                 .replace("'", "")
-                .replace("'", "")   // right single quotation mark U+2019
+                .replace("\u2019", "")   // right single quotation mark
                 .replace(" ", "_")
                 .replace("-", "_");
         return switch (key) {
             case "MENS_SINGLES",   "MEN_SINGLES",   "MENS_SINGLE",
-                 "OPEN_SINGLES",   "MALE_SINGLES"              -> "MENS_SINGLES";
+                 "MALE_SINGLES"                                -> "MENS_SINGLES";
             case "WOMENS_SINGLES", "WOMEN_SINGLES", "WOMENS_SINGLE",
-                 "FEMALE_SINGLES"                              -> "WOMENS_SINGLES";
-            case "OPEN_DOUBLES",   "MENS_DOUBLES",  "MEN_DOUBLES",
-                 "MALE_DOUBLES"                                -> "OPEN_DOUBLES";
-            case "MIXED_DOUBLES",  "MIXED"                    -> "MIXED_DOUBLES";
+                 "FEMALE_SINGLES"                             -> "WOMENS_SINGLES";
+            case "OPEN_SINGLES",   "OPEN_SINGLE"              -> "OPEN_SINGLES";
+            case "UNDER_16",  "UNDER16", "U16", "U_16",
+                 "UNDER_SIXTEEN", "UNDERSIXTEEN",
+                 "JUNIOR_U16_SINGLES", "JUNIOR_U16_SINGLE"   -> "UNDER_16";
+            case "ABOVE_16",  "ABOVE16", "A16", "A_16",
+                 "ABOVE_SIXTEEN", "ABOVESIXTEEN"              -> "ABOVE_16";
+            case "OPEN_DOUBLES",   "OPEN_DOUBLE"              -> "OPEN_DOUBLES";
+            case "MIXED_DOUBLES",  "MIXED",
+                 "MIXED_DOUBLE"                               -> "MIXED_DOUBLES";
+            case "BEGINNER_DOUBLES", "BEGINNER_DOUBLE",
+                 "BEGINNER"                                   -> "BEGINNER_DOUBLES";
+            case "WOMENS_DOUBLES", "WOMEN_DOUBLES",
+                 "WOMENS_DOUBLE", "WOMEN_DOUBLE"              -> "WOMENS_DOUBLES";
+            case "MENS_DOUBLES", "MEN_DOUBLES",
+                 "MENS_DOUBLE", "MEN_DOUBLE"                  -> "MENS_DOUBLES";
+            case "JUNIOR_U16_DOUBLES", "JUNIOR_U16_DOUBLE"    -> "JUNIOR_U16_DOUBLES";
+            case "JUNIOR_ABOVE16_SINGLES", "JUNIOR_ABOVE16_SINGLE",
+                 "JUNIOR_ABOVE_16_SINGLES"                    -> "JUNIOR_ABOVE16_SINGLES";
+            case "JUNIOR_ABOVE16_DOUBLES", "JUNIOR_ABOVE16_DOUBLE",
+                 "JUNIOR_ABOVE_16_DOUBLES"                    -> "JUNIOR_ABOVE16_DOUBLES";
+            case "SENIOR_DOUBLES", "SENIOR_DOUBLE"            -> "SENIOR_DOUBLES";
+            case "DISABLED_SINGLES", "DISABLED_SINGLE"        -> "DISABLED_SINGLES";
+            case "DISABLED_DOUBLES", "DISABLED_DOUBLE"        -> "DISABLED_DOUBLES";
+            case "DISABLED_MIXED"                             -> "DISABLED_MIXED";
+            case "MONSTER_DYP", "MONSTER"                    -> "MONSTER_DYP";
+            case "TEAM_EVENT", "TEAM"                         -> "TEAM_EVENT";
             default -> key;
         };
     }
