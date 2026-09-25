@@ -435,6 +435,8 @@ public class RankingService {
                                             int totalPoints, String category) {
         String p1Name = team.getPlayerOne() != null ? team.getPlayerOne().getName() : "?";
         String p2Name = team.getPlayerTwo() != null ? team.getPlayerTwo().getName() : "?";
+        String p1Pic  = team.getPlayerOne() != null ? team.getPlayerOne().getProfilePictureUrl() : null;
+        String p2Pic  = team.getPlayerTwo() != null ? team.getPlayerTwo().getProfilePictureUrl() : null;
         return RankingResponseDTO.builder()
                 .teamId(team.getTeamId())
                 .wins(wins)
@@ -443,6 +445,8 @@ public class RankingService {
                 .points(totalPoints)
                 .userName(p1Name + " & " + p2Name)
                 .category(category)
+                .player1PictureUrl(p1Pic)
+                .player2PictureUrl(p2Pic)
                 .build();
     }
 }
