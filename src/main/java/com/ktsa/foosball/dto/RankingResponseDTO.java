@@ -32,7 +32,16 @@ public class RankingResponseDTO {
     private Long teamId;
 
     /**
-     * Profile picture URL — set for spotlight / top-player display
+     * Profile picture URL — set for singles entries
      */
     private String profilePictureUrl;
+
+    /**
+     * Individual profile picture URLs for doubles entries.
+     * player1PictureUrl → team.playerOne
+     * player2PictureUrl → team.playerTwo
+     * Null for singles entries.
+     */
+    private String player1PictureUrl;
+    private String player2PictureUrl;
 }
